@@ -1,0 +1,13 @@
+[package]
+name = "ext2"
+version = "0.0.1"
+authors = ["chronium <chronium@users.noreply.github.com"]
+edition = "2021"
+
+[lib]
+name = "ext2"
+path = "lib.rs"
+
+[dependencies]
+api = { path = "../api" }
+utils = { path = "../../utils" }

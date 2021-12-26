@@ -1,0 +1,8 @@
+/target
+Cargo.lock
+loopback_dev
+/isotmp
+build/kernel.elf
+build/os.img
+build/kernel.sym
+virtio-net.pcap

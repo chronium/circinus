@@ -1,0 +1,27 @@
+[workspace]
+members = [
+  "environment",
+  "kernel",
+  "utils",
+  "log_filter",
+  "extensions/api",
+  "extensions/virtio",
+  "extensions/virtio_net",
+  "extensions/virtio_blk",
+]
+
+[profile.release]
+opt-level = 3
+codegen-units = 1
+lto = true
+debug = 1
+debug-assertions = false
+overflow-checks = false
+
+[profile.dev]
+opt-level = 0
+codegen-units = 1
+lto = true
+debug = 1
+debug-assertions = false
+overflow-checks = false

@@ -1,0 +1,19 @@
+[package]
+name = "api"
+version = "0.0.1"
+authors = ["chronium <chronium@users.noreply.github.com"]
+edition = "2021"
+
+[lib]
+name = "api"
+path = "lib.rs"
+
+[dependencies]
+x86 = "0.43.0"
+log = "0.4.14"
+memoffset = "0.6.5"
+
+arrayvec = { version = "0.7.2", default-features = false }
+
+utils = { path = "../../utils" }
+environment = { path = "../../environment" }
