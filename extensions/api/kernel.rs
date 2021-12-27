@@ -1,4 +1,4 @@
-use alloc::{boxed::Box, sync::Arc, vec, vec::Vec};
+use alloc::{boxed::Box, sync::Arc, vec::Vec};
 use environment::bootinfo::VirtioMmioDevice;
 use utils::static_cell::StaticCell;
 

@@ -7,6 +7,7 @@
 #![feature(default_alloc_error_handler)]
 #![feature(box_syntax)]
 
+#[macro_use]
 extern crate alloc;
 
 #[macro_use]
@@ -14,8 +15,6 @@ extern crate log;
 
 #[macro_use]
 extern crate environment;
-
-use core::sync::atomic::{AtomicUsize, Ordering};
 
 use api::kernel::KernelOps;
 use environment::{
@@ -25,7 +24,7 @@ use environment::{
 use interrupt::attach_irq;
 use schema::{block, system::gpt};
 
-use crate::{process::switch, schema::block::with_block_driver};
+use crate::process::switch;
 
 struct System;
 

@@ -297,7 +297,7 @@ impl Virtio {
 	pub fn new(transport: Arc<dyn VirtioTransport>) -> Self {
 		Self {
 			transport,
-			virtqueues: Vec::new(),
+			virtqueues: vec![],
 		}
 	}
 
@@ -339,7 +339,7 @@ impl Virtio {
 		}
 
 		// Initialize virtqueues.
-		let mut virtqueues = Vec::new();
+		let mut virtqueues = vec![];
 		for index in 0..num_virtqueues {
 			virtqueues.push(VirtQueue::new(index, self.transport.clone()));
 		}

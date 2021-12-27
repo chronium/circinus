@@ -1,6 +1,10 @@
 #![cfg_attr(feature = "no_std", no_std)]
 #![feature(const_fn_trait_bound)]
 
+#[allow(unused_imports)]
+#[macro_use]
+extern crate alloc;
+
 pub mod alignment;
 pub mod bitmap;
 pub mod bitmap_allocator;

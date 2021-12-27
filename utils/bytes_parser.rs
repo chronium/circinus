@@ -1,5 +1,7 @@
 use core::convert::TryInto;
 
+use alloc::{string::String, vec::Vec};
+
 fn align_down(value: usize, align: usize) -> usize {
 	value & !(align - 1)
 }
@@ -11,6 +13,7 @@ fn align_up(value: usize, align: usize) -> usize {
 #[derive(Debug, PartialEq)]
 pub enum BytesParserError {
 	TooShort,
+	Utf8Parse,
 }
 
 pub struct BytesParser<'a> {
@@ -29,6 +32,10 @@ impl<'a> BytesParser<'a> {
 
 	pub fn remaining_len(&self) -> usize {
 		self.buffer.len() - self.current
+	}
+
+	pub fn remaining_len_at(&self, offset: usize) -> usize {
+		self.buffer.len() - self.current - offset
 	}
 
 	pub fn skip(&mut self, len: usize) -> Result<(), BytesParserError> {
@@ -53,6 +60,13 @@ impl<'a> BytesParser<'a> {
 		Ok(())
 	}
 
+	pub fn consume_u8(&mut self) -> Result<u8, BytesParserError> {
+		let res = self.peek_bytes(1)?;
+
+		self.current += 1;
+		Ok(res[0])
+	}
+
 	pub fn consume_bytes(
 		&mut self,
 		len: usize,
@@ -63,29 +77,64 @@ impl<'a> BytesParser<'a> {
 		Ok(res)
 	}
 
-	pub fn peek_bytes(
-		&mut self,
+	pub fn peek_bytes(&self, len: usize) -> Result<&'a [u8], BytesParserError> {
+		self.peek_bytes_at(len, 0)
+	}
+
+	pub fn peek_bytes_at(
+		&self,
 		len: usize,
+		offset: usize,
 	) -> Result<&'a [u8], BytesParserError> {
-		if self.current + len > self.buffer.len() {
+		let at = self.current + offset;
+
+		if at + len > self.buffer.len() {
 			return Err(BytesParserError::TooShort);
 		}
 
-		Ok(&self.buffer[self.current..self.current + len])
+		Ok(&self.buffer[at..at + len])
 	}
 
 	pub fn consume_le_u16(&mut self) -> Result<u16, BytesParserError> {
-		if self.remaining_len() < 2 {
+		let value = self.peek_le_u16_at(0)?;
+		self.current += 2;
+		Ok(value)
+	}
+
+	pub fn peek_le_u16_at(
+		&self,
+		offset: usize,
+	) -> Result<u16, BytesParserError> {
+		let at = self.current + offset;
+
+		if self.remaining_len_at(offset) < 2 {
 			return Err(BytesParserError::TooShort);
 		}
 
-		let value = u16::from_le_bytes(
-			self.buffer[self.current..self.current + 2]
-				.try_into()
-				.unwrap(),
-		);
+		Ok(u16::from_le_bytes(
+			self.buffer[at..at + 2].try_into().unwrap(),
+		))
+	}
+
+	pub fn consume_be_u16(&mut self) -> Result<u16, BytesParserError> {
+		let value = self.peek_be_u16_at(0)?;
 		self.current += 2;
 		Ok(value)
+	}
+
+	pub fn peek_be_u16_at(
+		&self,
+		offset: usize,
+	) -> Result<u16, BytesParserError> {
+		let at = self.current + offset;
+
+		if self.remaining_len_at(offset) < 2 {
+			return Err(BytesParserError::TooShort);
+		}
+
+		Ok(u16::from_be_bytes(
+			self.buffer[at..at + 2].try_into().unwrap(),
+		))
 	}
 
 	pub fn consume_le_u32(&mut self) -> Result<u32, BytesParserError> {
@@ -94,6 +143,20 @@ impl<'a> BytesParser<'a> {
 		}
 
 		let value = u32::from_le_bytes(
+			self.buffer[self.current..self.current + 4]
+				.try_into()
+				.unwrap(),
+		);
+		self.current += 4;
+		Ok(value)
+	}
+
+	pub fn consume_be_u32(&mut self) -> Result<u32, BytesParserError> {
+		if self.remaining_len() < 4 {
+			return Err(BytesParserError::TooShort);
+		}
+
+		let value = u32::from_be_bytes(
 			self.buffer[self.current..self.current + 4]
 				.try_into()
 				.unwrap(),
@@ -128,5 +191,21 @@ impl<'a> BytesParser<'a> {
 		);
 		self.current += 4;
 		Ok(value)
+	}
+
+	pub fn consume_cstr(
+		&mut self,
+		len: usize,
+	) -> Result<String, BytesParserError> {
+		let bytes = self.consume_bytes(len)?;
+
+		String::from_utf8(
+			bytes
+				.iter()
+				.filter(|&&b| b != 0)
+				.map(|b| *b)
+				.collect::<Vec<_>>(),
+		)
+		.map_err(|_| BytesParserError::Utf8Parse)
 	}
 }

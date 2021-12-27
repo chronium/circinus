@@ -52,13 +52,13 @@ pub fn set_log_filter(pattern: &str) {
 
 pub(crate) fn init() {
 	log::set_logger(&LOGGER).unwrap();
-	log::set_max_level(log::LevelFilter::Trace);
+	// log::set_max_level(log::LevelFilter::Trace);
 	// TODO
-	// log::set_max_level(
-	// if cfg!(debug_assertions) {
-	// log::LevelFilter::Trace
-	// } else {
-	// log::LevelFilter::Info
-	// },
-	// );
+	log::set_max_level(
+		if cfg!(debug_assertions) {
+			log::LevelFilter::Trace
+		} else {
+			log::LevelFilter::Info
+		},
+	);
 }

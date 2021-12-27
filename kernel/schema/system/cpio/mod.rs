@@ -26,6 +26,7 @@ macro_rules! consume_str {
 	}};
 }
 
+#[allow(unused)]
 pub struct CpioFile<'a> {
 	filename: &'a str,
 	data: &'a [u8],
@@ -46,18 +47,21 @@ pub enum CpioNode<'a> {
 	Symlink(Arc<CpioSymlink<'a>>),
 }
 
+#[allow(unused)]
 pub struct CpioDir<'a> {
 	filename: &'a str,
 	stat: posix::Stat,
 	files: HashMap<&'a str, CpioNode<'a>>,
 }
 
+#[allow(unused)]
 pub struct CpioSymlink<'a> {
 	filename: &'a str,
 	stat: posix::Stat,
 	dst: unix::PathBuf,
 }
 
+#[allow(unused)]
 pub struct CpioArchive<'a> {
 	root_dir: Arc<CpioDir<'a>>,
 }

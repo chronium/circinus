@@ -174,6 +174,7 @@ impl Framebuffer {
 		}
 	}
 
+	#[allow(unused)]
 	fn rows(&self) -> usize {
 		self.width / self.font.width as usize
 	}

@@ -9,7 +9,7 @@ use crate::kernel::kernel_ops;
 use self::pci::PciDevice;
 
 static DEVICE_PROBERS: SpinLock<Vec<Box<dyn DeviceProber>>> =
-	SpinLock::new(Vec::new());
+	SpinLock::new(vec![]);
 
 pub trait Driver: Send + Sync {
 	fn name(&self) -> &str;

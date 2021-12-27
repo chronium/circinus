@@ -63,6 +63,15 @@ image name:
     ./{{limine}}/limine-install $path
     echo "HDD is complete"
 
+dumpext2 name:
+    #!/usr/bin/env sh
+    set -e
+    path="build/{{name}}"
+
+    sudo losetup -Pf --show $path >loopback_dev
+    sudo dumpe2fs -h $(cat loopback_dev)p1
+    sudo losetup -d $(cat loopback_dev)
+
 limine:
     #!/usr/bin/env bash
     pushd ./extern/limine

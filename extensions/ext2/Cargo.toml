@@ -9,5 +9,7 @@ name = "ext2"
 path = "lib.rs"
 
 [dependencies]
+bitflags = "1.3.2"
+
 api = { path = "../api" }
 utils = { path = "../../utils" }

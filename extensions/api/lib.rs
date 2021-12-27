@@ -3,6 +3,7 @@
 
 extern crate log;
 
+#[macro_use]
 extern crate alloc;
 
 use core::mem::size_of;
@@ -48,5 +49,7 @@ pub unsafe trait AsBuf: Sized {
 }
 
 pub mod driver;
+pub mod guid;
 pub mod kernel;
 pub mod schema;
+pub mod uuid;

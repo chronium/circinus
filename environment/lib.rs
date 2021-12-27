@@ -4,6 +4,8 @@
 #![feature(asm)]
 #![feature(box_syntax)]
 
+#[allow(unused_imports)]
+#[macro_use]
 extern crate alloc;
 
 #[macro_use]

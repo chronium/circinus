@@ -1,6 +1,6 @@
-use alloc::{boxed::Box, fmt, string::String, sync::Arc, vec, vec::Vec};
-use api::schema::fs::{self, Partition};
-use itertools::join;
+use alloc::{fmt, string::String, sync::Arc, vec::Vec};
+use api::{guid::Guid, schema::fs::Partition};
+use atomic_refcell::AtomicRefCell;
 use spin::Mutex;
 use utils::{alignment::align_up, bytes_parser::BytesParser, once::Once};
 
@@ -79,6 +79,7 @@ pub struct PartitionEntry {
 	end_lba: u64,
 	attributes: u64,
 	name: String,
+	block_size: AtomicRefCell<Option<usize>>,
 }
 
 impl PartitionEntry {
@@ -123,11 +124,37 @@ impl PartitionEntry {
 			end_lba,
 			attributes,
 			name,
+			block_size: AtomicRefCell::new(None),
 		}))
 	}
 }
 
-impl Partition for PartitionEntry {}
+impl Partition for PartitionEntry {
+	fn read_sector(&self, sector: usize, buf: &mut [u8]) {
+		with_block_driver(|block| {
+			assert!(buf.len() >= block.sector_size());
+			assert!((self.start_lba + sector as u64) < self.end_lba);
+			block.read_sector(self.start_lba as usize + sector, buf)
+		})
+	}
+
+	fn in_sectors(&self, size: usize) -> usize {
+		with_block_driver(|block| {
+			align_up(size, block.sector_size()) / block.sector_size()
+		})
+	}
+
+	fn block_size(&self) -> usize {
+		*self
+			.block_size
+			.borrow_mut()
+			.get_or_insert(with_block_driver(|block| block.sector_size()))
+	}
+
+	fn name(&self) -> &str {
+		&self.name
+	}
+}
 
 #[derive(Debug)]
 pub enum GptError {
@@ -230,54 +257,6 @@ impl fmt::Debug for GptHeader {
 			.field("num_partitions", &self.partition_count)
 			.field("partition_entry_bytes", &self.partition_entry_bytes)
 			.field("partition_entry_crc", &self.partition_entry_crc)
-			.finish()
-	}
-}
-
-pub struct Guid {
-	first: u32,
-	second: u16,
-	third: u16,
-	fourth: [u8; 2],
-	fifth: [u8; 6],
-}
-
-impl Guid {
-	fn new(bytes: &[u8]) -> Self {
-		assert!(bytes.len() == 16);
-		let mut bytes = BytesParser::new(bytes);
-
-		Self::parse(&mut bytes)
-	}
-
-	fn parse(parser: &mut BytesParser) -> Self {
-		let first = parser.consume_le_u32().unwrap();
-		let second = parser.consume_le_u16().unwrap();
-		let third = parser.consume_le_u16().unwrap();
-		let fourth = parser.consume_bytes(2).unwrap().try_into().unwrap();
-		let fifth = parser.consume_bytes(6).unwrap().try_into().unwrap();
-
-		Self {
-			first,
-			second,
-			third,
-			fourth,
-			fifth,
-		}
-	}
-}
-
-impl fmt::Debug for Guid {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-		f.debug_tuple("Guid")
-			.field(&format_args!(
-				"{:08x}-{:04x}-{:04x}-{}-{}",
-				self.first,
-				self.second,
-				self.third,
-				join(self.fourth, ""),
-				join(self.fifth, ""),
-			))
 			.finish()
 	}
 }
