@@ -113,6 +113,24 @@ impl Framebuffer {
 				self.col = 0;
 			}
 			_ => {
+				if self.row + 1 > self.height {
+					self.col = 0;
+					self.row = self.height - self.font.height as usize;
+
+					unsafe {
+						core::ptr::copy(
+							self.ptr
+								.as_ptr::<Pixel>()
+								.add(self.width * self.font.height as usize),
+							self.ptr.as_mut_ptr::<Pixel>(),
+							self.width
+								* (self.height - self.font.height as usize),
+						)
+					}
+
+					self.clear_row(self.cols() - 1);
+				}
+
 				let offset = c as usize * self.font.stride as usize;
 				for y in 0..self.font.height as usize {
 					for x in 0..self.font.width as usize {
@@ -139,24 +157,6 @@ impl Framebuffer {
 					self.draw('\n');
 				} else {
 					self.col += self.font.width as usize;
-				}
-
-				if self.row >= self.height {
-					self.col = 0;
-					self.row = self.height - self.font.height as usize;
-
-					unsafe {
-						core::ptr::copy(
-							self.ptr
-								.as_ptr::<Pixel>()
-								.add(self.width * self.font.height as usize),
-							self.ptr.as_mut_ptr::<Pixel>(),
-							self.width
-								* (self.height - self.font.height as usize),
-						)
-					}
-
-					self.clear_row(self.cols() - 1);
 				}
 			}
 		}

@@ -8,7 +8,7 @@ extern crate alloc;
 
 use core::mem::size_of;
 
-pub use environment::{debug_warn, warn_if_err, warn_once};
+pub use environment::{debug_warn, print, println, warn_if_err, warn_once};
 pub use log::{debug, error, info, trace, warn};
 
 pub mod address {
@@ -27,6 +27,10 @@ pub mod mm {
 
 pub mod sync {
 	pub use environment::spinlock::{SpinLock, SpinLockGuard};
+}
+
+pub mod owo_colors {
+	pub use owo_colors::*;
 }
 
 pub unsafe trait AsBuf: Sized {
@@ -51,5 +55,6 @@ pub unsafe trait AsBuf: Sized {
 pub mod driver;
 pub mod guid;
 pub mod kernel;
+pub mod posix;
 pub mod schema;
 pub mod uuid;

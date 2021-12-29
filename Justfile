@@ -54,22 +54,33 @@ image name:
     sudo partprobe $(cat loopback_dev)
     sudo mkfs.ext2 $(cat loopback_dev)p1
     sudo mount $(cat loopback_dev)p1 isotmp/
-    sudo cp -Rf build/kernel.elf isotmp/
+    sudo mkdir -p isotmp/boot
+    sudo cp -Rf build/kernel.elf isotmp/boot
+    sudo cp -Rf build/kernel.sym isotmp/boot
+    sudo cp -Rf {{limine}}/limine.sys isotmp/boot
     sudo cp -Rf root/* isotmp/
-    sudo cp -Rf {{limine}}/limine.sys isotmp/
     sync
     sudo umount isotmp/
     sudo losetup -d $(cat loopback_dev)
     ./{{limine}}/limine-install $path
     echo "HDD is complete"
 
-dumpext2 name:
+dumpext2 name=img:
     #!/usr/bin/env sh
     set -e
     path="build/{{name}}"
 
     sudo losetup -Pf --show $path >loopback_dev
-    sudo dumpe2fs -h $(cat loopback_dev)p1
+    sudo dumpe2fs $(cat loopback_dev)p1
+    sudo losetup -d $(cat loopback_dev)
+
+debugfs name=img:
+    #!/usr/bin/env sh
+    set -e
+    path="build/{{name}}"
+    
+    sudo losetup -Pf --show $path >loopback_dev
+    sudo debugfs $(cat loopback_dev)p1
     sudo losetup -d $(cat loopback_dev)
 
 limine:

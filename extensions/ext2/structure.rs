@@ -1,7 +1,7 @@
 use alloc::string::String;
-use api::uuid::Uuid;
+use api::{posix, uuid::Uuid};
 use bitflags::bitflags;
-use utils::bytes_parser::BytesParser;
+use utils::{alignment::align_up, bytes_parser::BytesParser};
 
 #[derive(Debug)]
 #[allow(unused)]
@@ -12,27 +12,27 @@ pub struct Superblock {
 	total_unallocated_blocks: u32,
 	total_unallocated_inodes: u32,
 	this_superblock: u32,
-	block_size: u32,
+	pub block_size: u32,
 	fragment_size: u32,
 	blocks_per_group: u32,
 	fragments_per_group: u32,
-	inodes_per_group: u32,
-	last_mount_time: u32,
-	last_written_time: u32,
+	pub inodes_per_group: u32,
+	last_mount_time: posix::Timestamp,
+	last_written_time: posix::Timestamp,
 	times_mounted_since_fsck: u16,
 	mounts_allowed_before_fsck: u16,
 	signature: u16,
 	state: FileSystemState,
 	error_handling: ErrorHandling,
 	minor_version: u16,
-	last_fsck: u32,
-	fsck_interval: u32,
+	last_fsck: posix::Timestamp,
+	fsck_interval: posix::Timestamp,
 	os_id: OsId,
 	major_version: u32,
 	uid_reserved_access: u16,
 	gid_reserved_access: u16,
 
-	extended: Option<ExtendedSuperblock>,
+	pub extended: Option<ExtendedSuperblock>,
 }
 
 #[derive(Debug)]
@@ -98,10 +98,10 @@ impl From<u32> for OsId {
 #[allow(unused)]
 pub struct ExtendedSuperblock {
 	first_non_reserved: u32,
-	inode_size_in_bytes: u16,
+	pub inode_size_in_bytes: u16,
 	this_superblock: u16,
 	optional_features: OptionalFeatures,
-	required_features: RequiredFeatures,
+	pub required_features: RequiredFeatures,
 	readonly_features: ReadOnlyFeatures,
 	fsid: Uuid,
 	volume_name: String,
@@ -128,7 +128,7 @@ bitflags! {
 }
 
 bitflags! {
-  struct RequiredFeatures: u32 {
+  pub struct RequiredFeatures: u32 {
 	const COMPRESSION = 0x01;
 	const DIRENT_TYPE = 0x02;
 	const JOURNAL_REPLAY = 0x04;
@@ -144,6 +144,40 @@ bitflags! {
   }
 }
 
+#[derive(Debug)]
+#[allow(unused)]
+pub struct BlockGroupDescriptor {
+	block_usage_bitmap: u32,
+	inode_usage_bitmap: u32,
+	pub inode_table: u32,
+	unallocated_blocks: u16,
+	unallocated_inodes: u16,
+	directories: u16,
+	_reserved: [u8; 14],
+}
+
+impl BlockGroupDescriptor {
+	pub fn parse(parser: &mut BytesParser) -> Self {
+		let block_usage_bitmap = parser.consume_le_u32().unwrap();
+		let inode_usage_bitmap = parser.consume_le_u32().unwrap();
+		let inode_table = parser.consume_le_u32().unwrap();
+		let unallocated_blocks = parser.consume_le_u16().unwrap();
+		let unallocated_inodes = parser.consume_le_u16().unwrap();
+		let directories = parser.consume_le_u16().unwrap();
+		let _reserved = parser.consume_bytes(14).unwrap();
+
+		Self {
+			block_usage_bitmap,
+			inode_usage_bitmap,
+			inode_table,
+			unallocated_blocks,
+			unallocated_inodes,
+			directories,
+			_reserved: _reserved.try_into().unwrap(),
+		}
+	}
+}
+
 impl Superblock {
 	pub fn parse(parser: &mut BytesParser) -> Self {
 		let total_inodes = parser.consume_le_u32().unwrap();
@@ -157,16 +191,18 @@ impl Superblock {
 		let blocks_per_group = parser.consume_le_u32().unwrap();
 		let fragments_per_group = parser.consume_le_u32().unwrap();
 		let inodes_per_group = parser.consume_le_u32().unwrap();
-		let last_mount_time = parser.consume_le_u32().unwrap();
-		let last_written_time = parser.consume_le_u32().unwrap();
+		let last_mount_time =
+			posix::Timestamp(parser.consume_le_u32().unwrap());
+		let last_written_time =
+			posix::Timestamp(parser.consume_le_u32().unwrap());
 		let times_mounted_since_fsck = parser.consume_le_u16().unwrap();
 		let mounts_allowed_before_fsck = parser.consume_le_u16().unwrap();
 		let signature = parser.consume_le_u16().unwrap();
 		let state = parser.consume_le_u16().unwrap();
 		let error_handling = parser.consume_le_u16().unwrap();
 		let minor_version = parser.consume_le_u16().unwrap();
-		let last_fsck = parser.consume_le_u32().unwrap();
-		let fsck_interval = parser.consume_le_u32().unwrap();
+		let last_fsck = posix::Timestamp(parser.consume_le_u32().unwrap());
+		let fsck_interval = posix::Timestamp(parser.consume_le_u32().unwrap());
 		let os_id = parser.consume_le_u32().unwrap();
 		let major_version = parser.consume_le_u32().unwrap();
 		let uid_reserved_access = parser.consume_le_u16().unwrap();
@@ -206,6 +242,25 @@ impl Superblock {
 			gid_reserved_access,
 			extended,
 		}
+	}
+
+	pub fn bgd_count(&self) -> usize {
+		let inode_count = self.total_inodes;
+		let block_count = self.total_blocks;
+
+		let blocks_per_group = self.blocks_per_group;
+		let inodes_per_group = self.inodes_per_group;
+
+		let blocks_bgd_count =
+			align_up(block_count as usize, blocks_per_group as usize)
+				/ blocks_per_group as usize;
+		let inode_bgd_count =
+			align_up(inode_count as usize, inodes_per_group as usize)
+				/ inodes_per_group as usize;
+
+		assert!(blocks_bgd_count == inode_bgd_count);
+
+		blocks_bgd_count as usize
 	}
 }
 
