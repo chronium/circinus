@@ -112,6 +112,7 @@ impl Process {
 	}
 }
 
+#[allow(unaligned_references)]
 pub fn switch_thread(prev: &Process, next: &Process) {
 	let head = cpu_local_head();
 

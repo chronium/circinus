@@ -144,7 +144,7 @@ bitflags! {
   }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[allow(unused)]
 pub struct BlockGroupDescriptor {
 	block_usage_bitmap: u32,

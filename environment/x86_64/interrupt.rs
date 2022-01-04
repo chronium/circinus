@@ -44,12 +44,14 @@ extern "C" {
 }
 
 #[no_mangle]
-#[allow(unaligned_references)]
 unsafe extern "C" fn x64_handle_interrupt(
 	vec: u8,
 	frame: *const InterruptFrame,
 ) {
 	let frame = &*frame;
+	let rip = frame.rip;
+	let rsp = frame.rsp;
+	let error = frame.error;
 
 	// FIXME: Check "Legacy replacement" mapping
 	const TIMER_IRQ: u8 = 0;
@@ -62,9 +64,9 @@ unsafe extern "C" fn x64_handle_interrupt(
 		trace!(
 			"interrupt({}): rip={:x}, rsp={:x}, err={:x}, cr2={:x}",
 			vec,
-			frame.rip,
-			frame.rsp,
-			frame.error,
+			rip,
+			rsp,
+			error,
 			x86::controlregs::cr2()
 		);
 	}
@@ -156,8 +158,8 @@ unsafe extern "C" fn x64_handle_interrupt(
 				panic!(
 					"page fault occurred in the kernel: rip={:x}, rsp={:x}, \
 					 vaddr={:x}",
-					frame.rip,
-					frame.rsp,
+					rip,
+					rsp,
 					cr2()
 				);
 			}

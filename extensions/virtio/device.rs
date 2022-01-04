@@ -168,9 +168,9 @@ impl VirtQueue {
 					num_freed += 1;
 
 					if (desc.flags & VIRTQ_DESC_F_NEXT) == 0 {
-						#[allow(unaligned_references)]
 						{
-							debug_assert_eq!(desc.next, 0);
+							let next = desc.next;
+							debug_assert_eq!(next, 0);
 						}
 
 						desc.next = prev_head;

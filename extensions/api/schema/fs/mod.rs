@@ -1,16 +1,20 @@
-pub mod dirent;
-pub mod readdir;
-
 use core::ops::Range;
 
 use alloc::{boxed::Box, sync::Arc, vec::Vec};
 use environment::spinlock::SpinLock;
-pub use readdir::ReadDir;
+
+pub use directory::Directory;
+pub use filesystem::{DirEntry, FileType};
+use utils::once::Once;
 
 use crate::kernel::kernel_ops;
 
+use self::vfs::Vfs;
+
 static PARTITION_PROBERS: SpinLock<Vec<Box<dyn PartitionProber>>> =
 	SpinLock::new(vec![]);
+
+pub static VFS: Once<SpinLock<Vfs>> = Once::new();
 
 pub trait Partition: Send + Sync {
 	fn read_sector(&self, sector: usize, buf: &mut [u8]);
@@ -42,9 +46,16 @@ pub fn register_partition_prober(prober: Box<dyn PartitionProber>) {
 }
 
 pub fn init() {
+	VFS.init(|| SpinLock::new(Vfs::new()));
+
 	for partition in kernel_ops().request_partitions() {
 		for prober in PARTITION_PROBERS.lock().iter() {
 			prober.probe(partition.clone());
 		}
 	}
 }
+
+pub mod directory;
+pub mod file;
+pub mod filesystem;
+pub mod vfs;
