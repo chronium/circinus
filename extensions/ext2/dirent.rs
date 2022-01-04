@@ -1,4 +1,5 @@
 use alloc::string::String;
+use api::schema::fs::{self, DirEntry};
 use utils::bytes_parser::BytesParser;
 
 #[derive(Debug)]
@@ -11,7 +12,25 @@ pub struct Dirent {
 	pub name: String,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+impl From<Dirent> for DirEntry {
+	fn from(dirent: Dirent) -> Self {
+		Self {
+			path: dirent.name.into(),
+			ftype: dirent.dirent_type.into(),
+		}
+	}
+}
+
+impl From<&Dirent> for DirEntry {
+	fn from(dirent: &Dirent) -> Self {
+		Self {
+			path: dirent.name.clone().into(),
+			ftype: dirent.dirent_type.into(),
+		}
+	}
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum DirentType {
 	Unknown = 0,
 	Regular = 1,
@@ -21,6 +40,16 @@ pub enum DirentType {
 	Fifo = 5,
 	Socket = 6,
 	Symlink = 7,
+}
+
+impl From<DirentType> for fs::FileType {
+	fn from(dir: DirentType) -> Self {
+		match dir {
+			DirentType::Regular => Self::RegularFile,
+			DirentType::Directory => Self::Directory,
+			_ => todo!(),
+		}
+	}
 }
 
 impl From<u8> for DirentType {

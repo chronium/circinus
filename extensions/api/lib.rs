@@ -54,6 +54,7 @@ pub unsafe trait AsBuf: Sized {
 
 pub mod driver;
 pub mod guid;
+pub mod io;
 pub mod kernel;
 pub mod posix;
 pub mod schema;

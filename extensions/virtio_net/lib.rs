@@ -76,7 +76,7 @@ impl DeviceProber for VirtioNetProber {
 		virtio::info!(virtio::Kind::NetworkCard, "Found device", "(over PCI)");
 
 		// TODO
-		let device = match VirtioPci::probe_pci(pci_device, VirtioNet::new) {
+		let _device = match VirtioPci::probe_pci(pci_device, VirtioNet::new) {
 			Ok(device) => Arc::new(SpinLock::new(device)),
 			Err(VirtioAttachError::InvalidVendorId) => {
 				return;

@@ -15,3 +15,4 @@ pub mod lazy;
 pub mod once;
 pub mod ring_buffer;
 pub mod static_cell;
+pub mod sync_ptr;

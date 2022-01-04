@@ -6,16 +6,18 @@ extern crate alloc;
 
 use core::ops::{Deref, DerefMut};
 
-use alloc::sync::Arc;
+use alloc::{boxed::Box, sync::Arc};
 use api::{
 	info,
+	io::OpenOptions,
 	owo_colors::OwoColorize,
 	println,
-	schema::fs::{self, register_partition_prober, PartitionProber},
+	schema::fs::{self, register_partition_prober, PartitionProber, VFS},
+	sync::SpinLock,
 };
 use utils::bytes_parser::BytesParser;
 
-use crate::{dirent::DirentType, filesystem::Ext2, structure::Superblock};
+use crate::{ext2::Ext2, structure::Superblock};
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
@@ -60,18 +62,43 @@ impl PartitionProber for Ext2Prober {
 
 		let mut ext2 = Ext2::new(partition, superblock);
 		ext2.parse_bgd_table();
+		let arc = Arc::new(SpinLock::new(box ext2 as Box<dyn Filesystem>));
 
-		let root_ino = ext2.read_inode(2);
-		info!("{:#?}", root_ino);
+		let mp = VFS.lock().mount_root(arc.clone());
+		let ext2 = VFS.lock().filesystem(&mp);
+
+		use fs::filesystem::Filesystem;
+		let root = ext2.lock().root();
 
 		println!("Contents of /");
-		let root_dirs = ext2.read_dirent(root_ino);
-		for dir in root_dirs {
-			if dir.dirent_type == DirentType::Directory {
-				println!("{}", dir.name.blue())
+		for dir in root.iter() {
+			if dir.ftype == fs::FileType::Directory {
+				println!("{}", dir.path.as_str().blue())
 			}
-			if dir.dirent_type == DirentType::Regular {
-				println!("{}", dir.name.green())
+			if dir.ftype == fs::FileType::RegularFile {
+				println!("{}", dir.path.as_str().green())
+			}
+		}
+
+		if let Ok(boot) = root.lookup("boot") {
+			println!("Contents of /boot");
+
+			for dir in boot.as_dir().expect("").iter() {
+				if dir.ftype == fs::FileType::Directory {
+					println!("{}", dir.path.as_str().blue())
+				}
+				if dir.ftype == fs::FileType::RegularFile {
+					println!("{}", dir.path.as_str().green())
+				}
+			}
+		};
+
+		if let Ok(test) = root.lookup("test.txt") {
+			println!("Contents of /test.txt");
+
+			match test.as_file().expect("").open(&OpenOptions::Read) {
+				Err(e) => info!("Could not open {:?}", e),
+				Ok(file) => {}
 			}
 		}
 	}
@@ -82,6 +109,7 @@ pub fn init() {
 }
 
 pub mod dirent;
+pub mod ext2;
 pub mod filesystem;
 pub mod inode;
 pub mod structure;
