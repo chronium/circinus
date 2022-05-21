@@ -1,9 +1,6 @@
 use alloc::sync::Arc;
 
-use crate::{
-	io::{self, IoError},
-	schema::unix::PathBuf,
-};
+use crate::{schema::unix::PathBuf, ErrorKind, Result};
 
 use super::{directory::Directory, file::File};
 
@@ -23,17 +20,17 @@ pub enum Node {
 }
 
 impl Node {
-	pub fn as_dir(&self) -> io::Result<&Arc<dyn Directory>> {
+	pub fn as_dir(&self) -> Result<&Arc<dyn Directory>> {
 		match self {
 			Self::Directory(dir) => Ok(dir),
-			_ => Err(IoError::NotADirectory),
+			_ => Err(ErrorKind::NotADirectory.into()),
 		}
 	}
 
-	pub fn as_file(&self) -> io::Result<&Arc<dyn File>> {
+	pub fn as_file(&self) -> Result<&Arc<dyn File>> {
 		match self {
 			Self::RegularFile(file) => Ok(file),
-			_ => Err(IoError::NotAFile),
+			_ => Err(ErrorKind::NotAFile.into()),
 		}
 	}
 }

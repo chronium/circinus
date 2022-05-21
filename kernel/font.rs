@@ -1,8 +1,8 @@
 pub struct Font {
   pub name: &'static str,
-  pub width: u16,
-  pub height: u16,
-  pub stride: u16,
+  pub width: usize,
+  pub height: usize,
+  pub stride: usize,
   pub max_glyph: u16,
   pub data: &'static [u8],
 }

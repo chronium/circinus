@@ -1,0 +1,15 @@
+[package]
+name = "csh"
+version = "0.0.1"
+authors = ["chronium <chronium@users.noreply.github.com>"]
+edition = "2021"
+
+[[bin]]
+name = "csh"
+path = "main.rs"
+
+[dependencies]
+base = { path = "../base" }
+circinus = { path = "../circinus" }
+
+cstr_core = { version = "0.2.5", features = ["nightly"] }

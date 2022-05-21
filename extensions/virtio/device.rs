@@ -8,10 +8,10 @@ use alloc::{sync::Arc, vec::Vec};
 use api::{
 	address::{PAddr, VAddr},
 	arch::PAGE_SIZE,
+	bitflags::bitflags,
 	mm::{alloc_pages, AllocPageFlags},
 	warn,
 };
-use bitflags::bitflags;
 use utils::alignment::align_up;
 
 use crate::transport::{virtio_pci::VirtioAttachError, VirtioTransport};

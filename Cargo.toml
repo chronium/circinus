@@ -5,10 +5,13 @@ members = [
   "utils",
   "log_filter",
   "extensions/api",
+  "extensions/ext2",
+  "extensions/tempfs",
   "extensions/virtio",
   "extensions/virtio_net",
   "extensions/virtio_blk",
 ]
+exclude = ["userland"]
 
 [profile.release]
 opt-level = 3
@@ -21,7 +24,7 @@ overflow-checks = false
 [profile.dev]
 opt-level = 0
 codegen-units = 1
-lto = true
+lto = false
 debug = 1
-debug-assertions = false
+debug-assertions = true
 overflow-checks = false

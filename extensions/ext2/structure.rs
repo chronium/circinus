@@ -102,7 +102,7 @@ pub struct ExtendedSuperblock {
 	this_superblock: u16,
 	optional_features: OptionalFeatures,
 	pub required_features: RequiredFeatures,
-	readonly_features: ReadOnlyFeatures,
+	pub readonly_features: ReadOnlyFeatures,
 	fsid: Uuid,
 	volume_name: String,
 	last_mounted_path: String,
@@ -137,7 +137,7 @@ bitflags! {
 }
 
 bitflags! {
-  struct ReadOnlyFeatures: u32 {
+  pub struct ReadOnlyFeatures: u32 {
 	const SPARESE_SUPERBLOCK = 0x01;
 	const LARGE_FILE_SIZE = 0x02;
   const DIRENT_BTREE = 0x04;

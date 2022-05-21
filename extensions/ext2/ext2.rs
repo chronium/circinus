@@ -1,21 +1,27 @@
+use core::sync::atomic::AtomicUsize;
+
 use alloc::{sync::Arc, vec::Vec};
-use api::{info, owo_colors::OwoColorize, schema::fs};
+use api::{info, owo_colors::OwoColorize, schema::fs, sync::SpinLock};
 use utils::{alignment::align_up, bytes_parser::BytesParser, once::Once};
 
 use crate::{
 	dirent::Dirent,
 	inode::Inode,
-	structure::{BlockGroupDescriptor, RequiredFeatures, Superblock},
+	structure::{
+		BlockGroupDescriptor, ReadOnlyFeatures, RequiredFeatures, Superblock,
+	},
 	BlockPointer,
 };
 
 pub struct Ext2 {
-	physical_partition: Arc<dyn fs::Partition>,
+	physical_partition: Arc<SpinLock<dyn fs::Partition>>,
 	superblock: Arc<Superblock>,
 	block_group_descriptors: Arc<Once<Vec<BlockGroupDescriptor>>>,
 	block_size: usize,
 	inode_size: usize,
 	dirent_has_type: bool,
+	pub large_file_size: bool,
+	next_fid: Arc<AtomicUsize>,
 }
 
 impl Clone for Ext2 {
@@ -27,13 +33,15 @@ impl Clone for Ext2 {
 			block_size: self.block_size.clone(),
 			inode_size: self.inode_size.clone(),
 			dirent_has_type: self.dirent_has_type.clone(),
+			large_file_size: self.large_file_size.clone(),
+			next_fid: self.next_fid.clone(),
 		}
 	}
 }
 
 impl Ext2 {
 	pub fn new(
-		physical_partition: Arc<dyn fs::Partition>,
+		physical_partition: Arc<SpinLock<dyn fs::Partition>>,
 		superblock: Superblock,
 	) -> Self {
 		let block_size = superblock.block_size as usize;
@@ -52,6 +60,15 @@ impl Ext2 {
 			})
 			.unwrap_or(false);
 
+		let large_file_size = superblock
+			.extended
+			.as_ref()
+			.map(|ext| {
+				ext.readonly_features
+					.contains(ReadOnlyFeatures::LARGE_FILE_SIZE)
+			})
+			.unwrap_or(false);
+
 		Self {
 			physical_partition,
 			superblock: Arc::new(superblock),
@@ -59,6 +76,8 @@ impl Ext2 {
 			block_size,
 			inode_size,
 			dirent_has_type,
+			large_file_size,
+			next_fid: Arc::new(AtomicUsize::new(0)),
 		}
 	}
 
@@ -100,7 +119,7 @@ impl Ext2 {
 			panic!(
 				"{} {}",
 				"Block Group Descriptor table already read for partition".red(),
-				self.physical_partition.name().blue()
+				self.physical_partition.lock().name().blue()
 			)
 		}
 
@@ -123,15 +142,16 @@ impl Ext2 {
 	pub fn read_block(&self, block: BlockPointer, buf: &mut [u8]) {
 		assert!(buf.len() >= self.block_size);
 
+		let partition = self.physical_partition.lock();
+
 		let sectors_per_block =
-			align_up(self.block_size, self.physical_partition.block_size())
-				/ self.physical_partition.block_size();
+			align_up(self.block_size, partition.block_size())
+				/ partition.block_size();
 
 		let start_sector = *block as usize * sectors_per_block;
 		let end_sector = start_sector + sectors_per_block;
 
-		self.physical_partition
-			.read_sectors(start_sector..end_sector, buf)
+		partition.read_sectors(start_sector..end_sector, buf)
 	}
 
 	pub fn read_block_alloc(&self, block: BlockPointer) -> Vec<u8> {

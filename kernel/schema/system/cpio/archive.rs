@@ -1,6 +1,8 @@
 use alloc::sync::Arc;
-use api::schema::{posix, unix};
-use hashbrown::HashMap;
+use api::{
+	hashbrown::HashMap,
+	schema::{posix, unix},
+};
 use utils::{byte_size::ByteSize, bytes_parser::BytesParser};
 
 use crate::schema::system::cpio::{CpioDir, CpioFile, CpioSymlink};

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/extern/limine" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/extern/limine/build/stage23-uefi/reduced-gnu-efi" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/extern/limine/build/stage23-uefi32/reduced-gnu-efi" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/extern/limine/reduced-gnu-efi" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/extern/limine/stivale" vcs="Git" />
+  </component>
+</project>

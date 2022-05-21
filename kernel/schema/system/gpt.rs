@@ -1,5 +1,5 @@
 use alloc::{fmt, string::String, sync::Arc, vec::Vec};
-use api::{guid::Guid, schema::fs::Partition};
+use api::{guid::Guid, schema::fs::Partition, sync::SpinLock};
 use atomic_refcell::AtomicRefCell;
 use spin::Mutex;
 use utils::{alignment::align_up, bytes_parser::BytesParser, once::Once};
@@ -165,7 +165,7 @@ pub enum GptError {
 
 pub struct Gpt {
 	header: GptHeader,
-	partitions: Vec<Option<Arc<PartitionEntry>>>,
+	partitions: Vec<Option<Arc<SpinLock<PartitionEntry>>>>,
 }
 
 impl Gpt {
@@ -199,7 +199,9 @@ impl Gpt {
 					self.header.partition_entry_bytes as usize,
 				) {
 					Err(e) => return Err(e),
-					Ok(part) => self.partitions.push(part.map(Arc::new)),
+					Ok(part) => self
+						.partitions
+						.push(part.map(SpinLock::new).map(Arc::new)),
 				}
 			}
 
@@ -210,12 +212,12 @@ impl Gpt {
 
 pub static GPT: Once<Mutex<Gpt>> = Once::new();
 
-pub fn partitions<'a>() -> Vec<Arc<dyn Partition>> {
+pub fn partitions<'a>() -> Vec<Arc<SpinLock<dyn Partition>>> {
 	GPT.lock()
 		.partitions
 		.iter()
 		.filter(|p| p.is_some())
-		.map(|p| p.as_ref().unwrap().clone() as Arc<dyn Partition>)
+		.map(|p| p.as_ref().unwrap().clone() as Arc<SpinLock<dyn Partition>>)
 		.collect::<Vec<_>>()
 }
 

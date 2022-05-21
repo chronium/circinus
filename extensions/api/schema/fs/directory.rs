@@ -2,12 +2,12 @@ use core::fmt::Debug;
 
 use alloc::sync::Arc;
 
-use crate::{io, schema::unix::PathBuf};
+use crate::{schema::unix::PathBuf, Result};
 
 use super::{filesystem::Node, DirEntry};
 
 pub trait Directory: Debug + Send + Sync {
-	fn _lookup(&self, path: PathBuf) -> io::Result<Node>;
+	fn _lookup(&self, path: PathBuf) -> Result<Node>;
 
 	fn read_dir(&self, index: usize) -> Option<DirEntry>;
 
@@ -22,7 +22,7 @@ pub trait Directory: Debug + Send + Sync {
 }
 
 impl dyn Directory {
-	pub fn lookup<P: Into<PathBuf>>(&self, path: P) -> io::Result<Node> {
+	pub fn lookup<P: Into<PathBuf>>(&self, path: P) -> Result<Node> {
 		self._lookup(path.into())
 	}
 }

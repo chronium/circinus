@@ -1,10 +1,14 @@
 use super::*;
 use crate::{
 	arch::{self},
-	process::{process::PROCESSES, Pid},
+	process::process::PROCESSES,
 };
 
 use alloc::sync::Arc;
+use api::{
+	process::{Pid, ProcessState},
+	ProcessOps,
+};
 
 use core::mem::{self};
 
@@ -36,11 +40,10 @@ pub fn switch() {
 
 	debug_assert!(next.state() == ProcessState::Runnable);
 
-	// TODO: usermode
-	// if let Some(vm) = next.vm().clone() {
-	// let lock = vm.lock();
-	// lock.page_table().switch();
-	// }
+	if let Some(vm) = next.vm().clone() {
+		let lock = vm.lock();
+		lock.page_table().switch();
+	}
 
 	// Drop `prev` and `next` here because `switch_thread` won't return when the
 	// current process is being destroyed (e.g. by exit(2)).

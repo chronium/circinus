@@ -71,8 +71,7 @@ impl Framebuffer {
 			_pitch: bootinfo.framebuffer.pitch as usize,
 			width: bootinfo.framebuffer.width as usize,
 			height: bootinfo.framebuffer.height as usize,
-			size: (bootinfo.framebuffer.width * bootinfo.framebuffer.height)
-				as usize,
+			size: (bootinfo.framebuffer.width * bootinfo.framebuffer.height) as usize,
 			_bpp: bootinfo.framebuffer.bpp,
 			row: 0,
 			col: 0,
@@ -108,32 +107,44 @@ impl Framebuffer {
 
 	pub fn draw(&mut self, c: char) {
 		match c {
+			'\0' => {}
+			'\x08' => {
+				if self.col < self.font.width {
+					if self.row > self.font.height {
+						self.row -= self.font.height;
+					} else {
+						self.row = 0;
+					}
+					self.col = self.width - self.font.width;
+				} else {
+					self.col -= self.font.width;
+				}
+			}
 			'\n' => {
-				self.row += self.font.stride as usize;
+				self.row += self.font.stride;
 				self.col = 0;
 			}
 			_ => {
 				if self.row + 1 > self.height {
 					self.col = 0;
-					self.row = self.height - self.font.height as usize;
+					self.row = self.height - self.font.height;
 
 					unsafe {
 						core::ptr::copy(
 							self.ptr
 								.as_ptr::<Pixel>()
-								.add(self.width * self.font.height as usize),
+								.add(self.width * self.font.height),
 							self.ptr.as_mut_ptr::<Pixel>(),
-							self.width
-								* (self.height - self.font.height as usize),
+							self.width * (self.height - self.font.height),
 						)
 					}
 
 					self.clear_row(self.cols() - 1);
 				}
 
-				let offset = c as usize * self.font.stride as usize;
-				for y in 0..self.font.height as usize {
-					for x in 0..self.font.width as usize {
+				let offset = c as usize * self.font.stride;
+				for y in 0..self.font.height {
+					for x in 0..self.font.width {
 						let cur_x = self.col + x;
 						let cur_y = self.row + y;
 
@@ -143,8 +154,7 @@ impl Framebuffer {
 								.as_mut_ptr::<Pixel>()
 								.add(cur_x + cur_y * self.width);
 
-							if self.font.data[y as usize + offset] >> x & 1 == 1
-							{
+							if self.font.data[y as usize + offset] >> x & 1 == 1 {
 								*px = self.fg;
 							} else {
 								*px = self.bg;
@@ -153,22 +163,21 @@ impl Framebuffer {
 					}
 				}
 
-				if self.col + self.font.width as usize >= self.width {
+				if self.col + self.font.width >= self.width {
 					self.draw('\n');
 				} else {
-					self.col += self.font.width as usize;
+					self.col += self.font.width;
 				}
 			}
 		}
 	}
 
 	fn clear_row(&self, row: usize) {
-		let fh = self.font.height as usize;
+		let fh = self.font.height;
 		for y in (row * fh)..(row + 1) * fh {
 			for x in 0..self.width {
 				unsafe {
-					*self.ptr.as_mut_ptr::<Pixel>().add(x + y * self.width) =
-						self.bg;
+					*self.ptr.as_mut_ptr::<Pixel>().add(x + y * self.width) = self.bg;
 				}
 			}
 		}
@@ -176,11 +185,11 @@ impl Framebuffer {
 
 	#[allow(unused)]
 	fn rows(&self) -> usize {
-		self.width / self.font.width as usize
+		self.width / self.font.width
 	}
 
 	fn cols(&self) -> usize {
-		self.height / self.font.height as usize
+		self.height / self.font.height
 	}
 }
 
@@ -229,21 +238,17 @@ impl vte::Perform for Framebuffer {
 							1 => light = true,
 							30..=37 => {
 								if light {
-									self.fg =
-										self.colors[(sub - 22) as usize].into();
+									self.fg = self.colors[(sub - 22) as usize].into();
 								} else {
-									self.fg =
-										self.colors[(sub - 30) as usize].into();
+									self.fg = self.colors[(sub - 30) as usize].into();
 								}
 							}
 							39 => self.reset_fg(),
 							40..=47 => {
 								if light {
-									self.bg =
-										self.colors[(sub - 32) as usize].into();
+									self.bg = self.colors[(sub - 32) as usize].into();
 								} else {
-									self.bg =
-										self.colors[(sub - 40) as usize].into();
+									self.bg = self.colors[(sub - 40) as usize].into();
 								}
 							}
 							49 => self.reset_bg(),
@@ -258,12 +263,7 @@ impl vte::Perform for Framebuffer {
 		}
 	}
 
-	fn esc_dispatch(
-		&mut self,
-		_intermediates: &[u8],
-		_ignore: bool,
-		_byte: u8,
-	) {
+	fn esc_dispatch(&mut self, _intermediates: &[u8], _ignore: bool, _byte: u8) {
 		trace!("esc: {:?} {} {}", _intermediates, _ignore, _byte);
 	}
 }

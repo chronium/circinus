@@ -1,7 +1,6 @@
 use alloc::collections::VecDeque;
+use api::process::Pid;
 use environment::spinlock::SpinLock;
-
-use super::process::Pid;
 
 pub struct Scheduler {
 	run_queue: SpinLock<VecDeque<Pid>>,

@@ -1,0 +1,11 @@
+[package]
+name = "base"
+version = "0.0.1"
+authors = ["chronium <chronium@users.noreply.github.com"]
+edition = "2021"
+
+[lib]
+name = "base"
+path = "lib.rs"
+
+[dependencies]

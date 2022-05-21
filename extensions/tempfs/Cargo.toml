@@ -1,0 +1,13 @@
+[package]
+name = "tempfs"
+version = "0.0.1"
+authors = ["chronium <chronium@users.noreply.github.com"]
+edition = "2021"
+
+[lib]
+name = "tempfs"
+path = "lib.rs"
+
+[dependencies]
+api = { path = "../api" }
+utils = { path = "../../utils" }
