@@ -1,0 +1,32 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "gdb",
+      "request": "attach",
+      "name": "Attach to gdbserver",
+      "executable": "./target/x64/debug/kernel",
+      "target": ":1234",
+      "remote": true,
+      "cwd": "${workspaceRoot}",
+      "valuesFormatting": "parseText",
+    },
+    {
+      "type": "by-gdb",
+      "request": "launch",
+      "name": "Launch(gdb)",
+      "program": "target/x64/debug/kernel",
+      "cwd": "${workspaceRoot}",
+      "remote": { 
+          "enabled": true,
+          "address": ":1234",
+          "mode": "remote",
+          "execfile": "target/x64/debug/kernel"
+      },
+      "sourceLanguages": ["rust"]
+    },
+  ]
+}

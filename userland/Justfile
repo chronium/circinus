@@ -1,0 +1,11 @@
+build exec:
+  #!/usr/bin/env bash
+  set -e
+
+  cargo build --release
+  cargo install --path {{exec}}
+
+  pushd ./build/
+  mv bin/* .
+  rm -rf bin .crates*
+  popd

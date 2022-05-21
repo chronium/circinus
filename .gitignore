@@ -6,3 +6,5 @@ build/kernel.elf
 build/os.img
 build/kernel.sym
 virtio-net.pcap
+
+/userland/target

@@ -1,8 +1,10 @@
 use core::{fmt, str::from_utf8_unchecked};
 
 use alloc::sync::Arc;
-use api::schema::{posix, unix};
-use hashbrown::HashMap;
+use api::{
+	hashbrown::HashMap,
+	schema::{posix, unix},
+};
 
 fn parse_str_field(bytes: &[u8]) -> &str {
 	unsafe { from_utf8_unchecked(bytes) }

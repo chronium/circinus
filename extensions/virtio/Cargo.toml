@@ -9,7 +9,6 @@ name = "virtio"
 path = "lib.rs"
 
 [dependencies]
-bitflags = "1.3.2"
 memoffset = "0.6.5"
 
 api = { path = "../api" }

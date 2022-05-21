@@ -85,11 +85,11 @@ macro_rules! println {
 #[macro_export]
 macro_rules! debug_warn {
     ($fmt:expr) => {
-        #[cfg(debug_assertions)]
+        //TODO: #[cfg(debug_assertions)]
         $crate::println!(concat!("\x1b[1;33mWARN: ", $fmt, "\x1b[0m"));
     };
     ($fmt:expr, $($arg:tt)*) => {
-        #[cfg(debug_assertions)]
+        //TODO: #[cfg(debug_assertions)]
         $crate::println!(concat!("\x1b[1;33mWARN: ", $fmt, "\x1b[0m"), $($arg)*);
     };
 }

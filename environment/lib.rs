@@ -1,7 +1,5 @@
 #![no_std]
-#![feature(global_asm)]
 #![feature(default_alloc_error_handler)]
-#![feature(asm)]
 #![feature(box_syntax)]
 
 #[allow(unused_imports)]
@@ -41,7 +39,7 @@ pub trait System: Sync {
 	) -> isize;
 
 	#[cfg(debug_assertions)]
-	fn usercopy_hook(&self) {}
+	fn usercopy_hook(&self);
 }
 
 static SYSTEM: StaticCell<&dyn System> = StaticCell::new(&NopSystem);
@@ -75,6 +73,9 @@ impl System for NopSystem {
 	) -> isize {
 		0
 	}
+
+	#[cfg(debug_assertions)]
+	fn usercopy_hook(&self) {}
 }
 
 fn system() -> &'static dyn System {
@@ -85,15 +86,16 @@ pub fn set_system(system: &'static dyn System) {
 	SYSTEM.store(system);
 }
 
-mod x86_64;
+mod x64;
 
 pub mod arch {
-	pub use super::x86_64::{
+	pub use crate::x64::{
 		backtrace::Backtrace,
 		cpu_local::cpu_local_head,
 		idle::{halt, idle},
 		interrupt::SavedInterruptStatus,
 		ioapic::enable_irq,
+		paging::PageTable,
 		profile::read_clock_counter,
 		serial::SERIAL0,
 		syscall::PtRegs,
@@ -101,6 +103,10 @@ pub mod arch {
 		PageFaultReason, KERNEL_BASE_ADDR, KERNEL_STRAIGHT_MAP_PADDR_END,
 		PAGE_SIZE, TICK_HZ,
 	};
+
+	pub mod x64 {
+		pub use crate::x64::gdt::{USER_CS64, USER_DS, USER_RPL};
+	}
 }
 
 pub mod address;

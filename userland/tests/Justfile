@@ -1,0 +1,6 @@
+build file:
+  gcc -static -nostdlib -ffreestanding {{file}}.c -o {{file}}
+  mv {{file}} ../build/
+
+dump file:
+  objdump -x {{file}}

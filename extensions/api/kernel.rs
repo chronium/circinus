@@ -1,10 +1,11 @@
 use alloc::{boxed::Box, sync::Arc, vec::Vec};
-use environment::bootinfo::VirtioMmioDevice;
+use environment::{bootinfo::VirtioMmioDevice, spinlock::SpinLock};
 use utils::static_cell::StaticCell;
 
 use crate::{
 	driver::{self, block::BlockDriver},
 	schema::fs::Partition,
+	ProcessOps,
 };
 
 pub trait KernelOps: Sync {
@@ -12,7 +13,9 @@ pub trait KernelOps: Sync {
 
 	fn register_block_driver(&self, driver: Box<dyn BlockDriver>);
 
-	fn request_partitions(&self) -> Vec<Arc<dyn Partition>>;
+	fn request_partitions(&self) -> Vec<Arc<SpinLock<dyn Partition>>>;
+
+	fn current_process(&self) -> Option<Arc<dyn ProcessOps>>;
 }
 
 static OPS: StaticCell<&dyn KernelOps> = StaticCell::new(&NopOps);
@@ -29,8 +32,12 @@ impl KernelOps for NopOps {
 
 	fn register_block_driver(&self, _driver: Box<dyn BlockDriver>) {}
 
-	fn request_partitions(&self) -> Vec<Arc<dyn Partition>> {
+	fn request_partitions(&self) -> Vec<Arc<SpinLock<dyn Partition>>> {
 		vec![]
+	}
+
+	fn current_process(&self) -> Option<Arc<dyn ProcessOps>> {
+		None
 	}
 }
 

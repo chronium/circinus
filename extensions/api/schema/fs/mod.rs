@@ -4,7 +4,9 @@ use alloc::{boxed::Box, sync::Arc, vec::Vec};
 use environment::spinlock::SpinLock;
 
 pub use directory::Directory;
+pub use file::File;
 pub use filesystem::{DirEntry, FileType};
+
 use utils::once::Once;
 
 use crate::kernel::kernel_ops;
@@ -38,7 +40,7 @@ pub trait Partition: Send + Sync {
 }
 
 pub trait PartitionProber: Send + Sync {
-	fn probe(&self, partition: Arc<dyn Partition>);
+	fn probe(&self, partition: Arc<SpinLock<dyn Partition>>);
 }
 
 pub fn register_partition_prober(prober: Box<dyn PartitionProber>) {

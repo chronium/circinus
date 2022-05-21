@@ -8,10 +8,10 @@ use api::{
 	driver::{
 		net::MacAddress, register_driver_prober, DeviceProber, VirtioMmioDevice,
 	},
+	memoffset::offset_of,
 	sync::SpinLock,
 	trace, warn,
 };
-use memoffset::offset_of;
 use virtio::{
 	device::Virtio,
 	transport::{

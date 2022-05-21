@@ -89,7 +89,7 @@ bitflags! {
 pub struct Inode {
 	type_and_perms: TypeAndPermissions,
 	uid: u16,
-	lower_size: u32,
+	pub lower_size: u32,
 	last_access: posix::Timestamp,
 	creation: posix::Timestamp,
 	last_modification: posix::Timestamp,
@@ -105,7 +105,7 @@ pub struct Inode {
 	triply_pointer: BlockPointer,
 	gen_number: u32,
 	extended_attrib_block: BlockPointer,
-	extended_dir_block: BlockPointer,
+	pub extended_dir_block: BlockPointer,
 	fragment_pointer: BlockPointer,
 	_osval2: [u8; 12],
 }

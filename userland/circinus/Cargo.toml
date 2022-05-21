@@ -1,0 +1,15 @@
+[package]
+name = "circinus"
+version = "0.0.1"
+authors = ["chronium <chronium@users.noreply.github.com"]
+edition = "2021"
+
+[lib]
+name = "circinus"
+path = "lib.rs"
+crate-type = ["lib"]
+
+[dependencies]
+owo-colors = "3.2.0"
+
+base = { path = "../base" }

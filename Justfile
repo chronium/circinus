@@ -1,5 +1,6 @@
-target := "x86_64"
-mem := "512M"
+target := "x64"
+qemutarget := "x86_64"
+mem := "2G"
 
 img := "os.img"
 drive := "if=none,id=dsk0,format=raw,file=build/" + img
@@ -27,15 +28,16 @@ clean:
     rm -f loopback_dev
     echo "Clean is complete"
 
-build release:
+build init release:
     #!/usr/bin/env bash
     set -e
+    export INIT_FILE={{init}}
     if { [ release != "debug" ] && [ release != "release" ] ;} then \
         echo Unknown build mode \"{{release}}\";\
         exit 1; \
     fi;
 
-    cargo build {{ if release == "debug" { "" } else { "--release" } }} --target kernel/arch/x86_64/x86_64.json
+    cargo -Z build-std=core,alloc -Z build-std-features=compiler-builtins-mem build --target kernel/arch/x64/x64.json {{ if release == "debug" { "" } else { "--release" } }}
     cp target/{{target}}/{{release}}/kernel build/kernel.elf
 
     nm build/kernel.elf | rustfilt | awk '{ $2=""; print $0 }' > build/kernel.sym
@@ -46,7 +48,7 @@ image name:
     set -e
     path="build/{{name}}"
 
-    dd if=/dev/zero of=$path bs=1M count=64
+    dd if=/dev/zero of=$path bs=1M count=1024
     parted -s $path mklabel gpt
     parted -s $path mkpart primary 2048s 100%
     sudo losetup -Pf --show $path >loopback_dev
@@ -89,8 +91,14 @@ limine:
     make
     popd
 
-run release="debug": (build release) (image img)
-    qemu-system-{{target}} -cpu Haswell {{qemu-args}}
+run init="init" release="debug": (build init release) (image img)
+    qemu-system-{{qemutarget}} -cpu Haswell {{qemu-args}}
 
-kvm release="debug": (build release) (image img)
-    sudo qemu-system-{{target}} -enable-kvm -cpu host {{qemu-args}}
+run_init init="init" release="debug": (build init release) (image img)
+    qemu-system-{{qemutarget}} -cpu Haswell {{qemu-args}}
+
+run_gdb init="init" release="debug": (build init release) (image img)
+    qemu-system-{{qemutarget}} -cpu Haswell {{qemu-args}} -S
+
+kvm init="init" release="debug": (build init release) (image img)
+    sudo qemu-system-{{qemutarget}} -enable-kvm -cpu host {{qemu-args}}

@@ -13,11 +13,11 @@ use api::{
 		block::{register_block_driver, BlockDriver, BlockOp},
 		register_driver_prober, DeviceProber, Driver,
 	},
+	memoffset::offset_of,
 	owo_colors::OwoColorize,
 	sync::SpinLock,
 	trace, warn, AsBuf,
 };
-use memoffset::offset_of;
 use utils::byte_size::ByteSize;
 use vcell::VolatileCell;
 use virtio::{
