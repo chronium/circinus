@@ -37,8 +37,7 @@ impl<'a> Elf<'a> {
 
 		let program_headers = unsafe {
 			from_raw_parts(
-				&buf[header.e_phoff as usize] as *const _
-					as *const ProgramHeader,
+				&buf[header.e_phoff as usize] as *const _ as *const ProgramHeader,
 				header.e_phnum as usize,
 			)
 		};
@@ -50,7 +49,7 @@ impl<'a> Elf<'a> {
 	}
 
 	pub fn entry(&self) -> Result<UserVAddr> {
-		println!("entry {:012x}", self.header.e_entry);
+		trace!("entry 0x{:012x}", self.header.e_entry);
 		UserVAddr::new_nonnull(self.header.e_entry as usize).map_err(Into::into)
 	}
 

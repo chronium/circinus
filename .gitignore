@@ -8,3 +8,11 @@ build/kernel.sym
 virtio-net.pcap
 
 /userland/target
+
+/userland/build
+
+/userland/write/write
+/userland/exit/exit
+/userland/tmp
+
+**/*.log

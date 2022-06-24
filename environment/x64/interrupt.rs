@@ -1,9 +1,8 @@
 use crate::{address::UserVAddr, system};
 
-use super::{
-	apic::ack_interrupt, ioapic::VECTOR_IRQ_BASE, serial::SERIAL0_IRQ,
-	PageFaultReason,
-};
+use core::fmt;
+
+use super::{apic::ack_interrupt, ioapic::VECTOR_IRQ_BASE, serial::SERIAL0_IRQ, PageFaultReason};
 use x86::{
 	controlregs::cr2,
 	current::rflags::{self, RFlags},
@@ -11,7 +10,7 @@ use x86::{
 };
 
 /// The interrupt stack frame.
-#[derive(Debug, Copy, Clone)]
+#[derive(Copy, Clone)]
 #[repr(C, packed)]
 struct InterruptFrame {
 	rax: u64,
@@ -37,6 +36,17 @@ struct InterruptFrame {
 	ss: u64,
 }
 
+impl fmt::Debug for InterruptFrame {
+	#[allow(unaligned_references)]
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		write!(
+			f,
+			"RIP={:x}, RSP={:x}, CS={:x}, ERR={:x}",
+			self.rip, self.rsp, self.cs, self.error
+		)
+	}
+}
+
 extern "C" {
 	fn usercopy1();
 	fn usercopy2();
@@ -44,14 +54,9 @@ extern "C" {
 }
 
 #[no_mangle]
-unsafe extern "C" fn x64_handle_interrupt(
-	vec: u8,
-	frame: *const InterruptFrame,
-) {
+#[allow(unaligned_references)]
+unsafe extern "C" fn x64_handle_interrupt(vec: u8, frame: *const InterruptFrame) {
 	let frame = &*frame;
-	let rip = frame.rip;
-	let rsp = frame.rsp;
-	let error = frame.error;
 
 	// FIXME: Check "Legacy replacement" mapping
 	const TIMER_IRQ: u8 = 0;
@@ -64,9 +69,9 @@ unsafe extern "C" fn x64_handle_interrupt(
 		trace!(
 			"interrupt({}): rip={:x}, rsp={:x}, err={:x}, cr2={:x}",
 			vec,
-			rip,
-			rsp,
-			error,
+			frame.rip,
+			frame.rsp,
+			frame.error,
 			x86::controlregs::cr2()
 		);
 	}
@@ -90,104 +95,106 @@ unsafe extern "C" fn x64_handle_interrupt(
 		}
 		DIVIDE_ERROR_VECTOR => {
 			// TODO:
-			todo!("unsupported exception: DIVIDE_ERROR");
+			panic!("unsupported exception: DIVIDE_ERROR\n{:?}", frame);
 		}
 		DEBUG_VECTOR => {
 			// TODO:
-			todo!("unsupported exception: DEBUG");
+			panic!("unsupported exception: DEBUG\n{:?}", frame);
 		}
 		NONMASKABLE_INTERRUPT_VECTOR => {
 			// TODO:
-			todo!("unsupported exception: NONMASKABLE_INTERRUPT");
+			panic!("unsupported exception: NONMASKABLE_INTERRUPT\n{:?}", frame);
 		}
 		BREAKPOINT_VECTOR => {
 			// TODO:
-			todo!("unsupported exception: BREAKPOINT");
+			panic!("unsupported exception: BREAKPOINT\n{:?}", frame);
 		}
 		OVERFLOW_VECTOR => {
 			// TODO:
-			todo!("unsupported exception: OVERFLOW");
+			panic!("unsupported exception: OVERFLOW\n{:?}", frame);
 		}
 		BOUND_RANGE_EXCEEDED_VECTOR => {
 			// TODO:
-			todo!("unsupported exception: BOUND_RANGE_EXCEEDED");
+			panic!("unsupported exception: BOUND_RANGE_EXCEEDED\n{:?}", frame);
 		}
 		INVALID_OPCODE_VECTOR => {
 			// TODO:
-			todo!("unsupported exception: INVALID_OPCODE");
+			panic!("unsupported exception: INVALID_OPCODE\n{:?}", frame);
 		}
 		DEVICE_NOT_AVAILABLE_VECTOR => {
 			// TODO:
-			todo!("unsupported exception: DEVICE_NOT_AVAILABLE");
+			panic!("unsupported exception: DEVICE_NOT_AVAILABLE\n{:?}", frame);
 		}
 		DOUBLE_FAULT_VECTOR => {
 			// TODO:
-			todo!("unsupported exception: DOUBLE_FAULT");
+			panic!("unsupported exception: DOUBLE_FAULT\n{:?}", frame);
 		}
 		COPROCESSOR_SEGMENT_OVERRUN_VECTOR => {
 			// TODO:
-			todo!("unsupported exception: COPROCESSOR_SEGMENT_OVERRUN");
+			panic!(
+				"unsupported exception: COPROCESSOR_SEGMENT_OVERRUN\n{:?}",
+				frame
+			);
 		}
 		INVALID_TSS_VECTOR => {
 			// TODO:
-			todo!("unsupported exception: INVALID_TSS");
+			panic!("unsupported exception: INVALID_TSS\n{:?}", frame);
 		}
 		SEGMENT_NOT_PRESENT_VECTOR => {
 			// TODO:
-			todo!("unsupported exception: SEGMENT_NOT_PRESENT");
+			panic!("unsupported exception: SEGMENT_NOT_PRESENT\n{:?}", frame);
 		}
 		STACK_SEGEMENT_FAULT_VECTOR => {
 			// TODO:
-			todo!("unsupported exception: STACK_SEGEMENT_FAULT");
+			panic!("unsupported exception: STACK_SEGEMENT_FAULT\n{:?}", frame);
 		}
 		GENERAL_PROTECTION_FAULT_VECTOR => {
 			// TODO:
-			todo!("unsupported exception: GENERAL_PROTECTION_FAULT");
+			panic!(
+				"unsupported exception: GENERAL_PROTECTION_FAULT\n{:?}",
+				frame
+			);
 		}
 		PAGE_FAULT_VECTOR => {
-			let reason =
-				PageFaultReason::from_bits_truncate(frame.error as u32);
+			let reason = PageFaultReason::from_bits_truncate(frame.error as u32);
 
 			// Panic if it's occurred in the kernel space.
-			let occurred_in_user = reason
-				.contains(PageFaultReason::CAUSED_BY_USER)
+			let occurred_in_user = reason.contains(PageFaultReason::CAUSED_BY_USER)
 				|| frame.rip == usercopy1 as *const u8 as u64
 				|| frame.rip == usercopy2 as *const u8 as u64
 				|| frame.rip == usercopy3 as *const u8 as u64;
 			if !occurred_in_user {
 				panic!(
-					"page fault occurred in the kernel: rip={:x}, rsp={:x}, \
-					 vaddr={:x}",
-					rip,
-					rsp,
+					"page fault occurred in the kernel: rip={:x}, rsp={:x}, vaddr={:x}",
+					frame.rip,
+					frame.rsp,
 					cr2()
 				);
 			}
 
-			// Abort if the virtual address points to out of the user's address
-			// space.
+			// Abort if the virtual address points to out of the user's address space.
 			let unaligned_vaddr = UserVAddr::new(cr2() as usize);
 			system().on_page_fault(unaligned_vaddr, frame.rip as usize, reason);
 		}
 		X87_FPU_VECTOR => {
 			// TODO:
-			todo!("unsupported exception: X87_FPU");
+			panic!("unsupported exception: X87_FPU\n{:?}", frame);
 		}
 		ALIGNMENT_CHECK_VECTOR => {
 			// TODO:
-			todo!("unsupported exception: ALIGNMENT_CHECK");
+			panic!("unsupported exception: ALIGNMENT_CHECK\n{:?}", frame);
 		}
 		MACHINE_CHECK_VECTOR => {
 			// TODO:
-			todo!("unsupported exception: MACHINE_CHECK");
+			panic!("unsupported exception: MACHINE_CHECK\n{:?}", frame);
 		}
 		SIMD_FLOATING_POINT_VECTOR => {
 			// TODO:
-			todo!("unsupported exception: SIMD_FLOATING_POINT");
+			panic!("unsupported exception: SIMD_FLOATING_POINT\n{:?}", frame);
 		}
 		VIRTUALIZATION_VECTOR => {
 			// TODO:
-			todo!("unsupported exception: VIRTUALIZATION");
+			panic!("unsupported exception: VIRTUALIZATION\n{:?}", frame);
 		}
 		_ => {
 			panic!("unexpected interrupt: vec={}", vec);

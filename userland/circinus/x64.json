@@ -1,24 +1,22 @@
 {
-    "llvm-target": "x86_64-unknown-linux-elf",
-    "data-layout": "e-m:e-i64:64-f80:128-n8:16:32:64-S128",
-    "linker-flavor": "ld.lld",
-    "linker": "rust-lld",
-    "target-endian": "little",
-    "target-pointer-width": "64",
-    "target-c-int-width": "32",
-    "arch": "x86_64",
-    "os": "circinus",
-    "features": "-mmx,-sse,+soft-float",
-    "relocation-model": "pic",
-    "panic-strategy": "abort",
-    "executables": true,
-    "disable-redzone": true,
-    "emit-debug-gdb-scripts": false,
-    "frame-pointer": "always",
-      "pre-link-args": { "ld": ["-T", "link-x64.ld", "-z","max-page-size=4096", "--gc-sections", "--start-group"] },
-      "post-link-args": { "ld": ["--end-group"] },
-      "no-compiler-rt": true,
-      "eliminate-frame-pointer": false,
-      "dynamic-linking": false,
-    "morestack": false
+  "llvm-target": "x86_64-unknown-none-elf",
+  "data-layout": "e-m:e-i64:64-f80:128-n8:16:32:64-S128",
+  "linker-flavor": "ld.lld",
+  "linker": "rust-lld",
+  "pre-link-args": {
+    "ld.lld": [
+      "--script=circinus/link-x64.ld"
+    ]
+  },
+  "target-endian": "little",
+  "target-pointer-width": "64",
+  "target-c-int-width": "32",
+  "arch": "x86_64",
+  "os": "none",
+  "features": "-mmx,-sse,+soft-float",
+  "executables": true,
+  "disable-redzone": true,
+  "emit-debug-gdb-scripts": false,
+  "frame-pointer": "always",
+  "relocation-model": "static"
 }

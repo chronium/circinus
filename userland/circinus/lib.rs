@@ -34,7 +34,7 @@ macro_rules! start {
 
 #[inline(never)]
 pub unsafe fn setup_heap() {
-	ALLOCATOR.init(1024 * 1024);
+	ALLOCATOR.init(1024 * 1024 * 16);
 }
 
 #[global_allocator]

@@ -20,13 +20,15 @@
       "name": "Launch(gdb)",
       "program": "target/x64/debug/kernel",
       "cwd": "${workspaceRoot}",
-      "remote": { 
-          "enabled": true,
-          "address": ":1234",
-          "mode": "remote",
-          "execfile": "target/x64/debug/kernel"
+      "remote": {
+        "enabled": true,
+        "address": ":1234",
+        "mode": "remote",
+        "execfile": "target/x64/debug/kernel"
       },
-      "sourceLanguages": ["rust"]
-    },
+      "sourceLanguages": [
+        "rust"
+      ]
+    }
   ]
 }

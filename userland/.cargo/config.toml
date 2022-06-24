@@ -3,18 +3,18 @@ build-std = ["core", "compiler_builtins", "alloc"]
 build-std-features = ["compiler-builtins-mem"]
 
 [target.x86_64-unknown-linux-gnu]
-rustflags = [
-  "-C",
-  "link-arg=-nostdlib",
-  "-C",
-  "target-feature=+crt-static",
-  "-C",
-  "relocation-model=static",
-]
 
 [build]
-target = "x86_64-unknown-linux-gnu"
-#target = "circinus/x64.json"
+#target = "x86_64-unknown-linux-gnu"
+#rustflags = [
+#   "-C",
+#   "link-arg=-nostdlib",
+#   "-C",
+#   "target-feature=+crt-static",
+#   "-C",
+#   "relocation-model=static",
+# ]
+target = "circinus/x64.json"
 
 [install]
 root = "build/"

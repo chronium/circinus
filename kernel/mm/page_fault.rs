@@ -12,17 +12,20 @@ use crate::process::current_process;
 
 use super::vm::VmAreaType;
 
-pub fn handle_page_fault(
-	unaligned_vaddr: Option<UserVAddr>,
-	ip: usize,
-	_reason: PageFaultReason,
-) {
+pub fn handle_page_fault(unaligned_vaddr: Option<UserVAddr>, ip: usize, _reason: PageFaultReason) {
 	let unaligned_vaddr = match unaligned_vaddr {
 		Some(unaligned_vaddr) => unaligned_vaddr,
 		None => {
 			debug_warn!(
-				"null pointer access (ip={:x}), killing the current process...",
-				ip
+				"null pointer access (vaddr={:x} ip={:x} reason={:?}), killing the current \
+				 process...",
+				unaligned_vaddr
+					.unwrap_or(unsafe {
+						environment::address::UserVAddr::new_unchecked(usize::MAX)
+					})
+					.value(),
+				ip,
+				_reason
 			);
 			// TODO: Process::exit_by_signal(signal::SIGSEGV);
 			loop {}
@@ -30,15 +33,12 @@ pub fn handle_page_fault(
 	};
 
 	let current = current_process();
-	let aligned_vaddr = match UserVAddr::new_nonnull(align_down(
-		unaligned_vaddr.value(),
-		PAGE_SIZE,
-	)) {
+	let aligned_vaddr = match UserVAddr::new_nonnull(align_down(unaligned_vaddr.value(), PAGE_SIZE))
+	{
 		Ok(uaddr) => uaddr,
 		_ => {
 			debug_warn!(
-				"invalid memory access at {} (ip={:x}), killing the current \
-				 process...",
+				"invalid memory access at {} (ip={:x}), killing the current process...",
 				unaligned_vaddr,
 				ip
 			);
@@ -69,8 +69,7 @@ pub fn handle_page_fault(
 	};
 
 	// Allocate and fill the page.
-	let paddr = alloc_pages(1, AllocPageFlags::USER)
-		.expect("failed to allocate an anonymous page");
+	let paddr = alloc_pages(1, AllocPageFlags::USER).expect("failed to allocate an anonymous page");
 	unsafe {
 		paddr.as_mut_ptr::<u8>().write_bytes(0, PAGE_SIZE);
 	}
@@ -82,9 +81,7 @@ pub fn handle_page_fault(
 			offset,
 			file_size,
 		} => {
-			let buf = unsafe {
-				slice::from_raw_parts_mut(paddr.as_mut_ptr(), PAGE_SIZE)
-			};
+			let buf = unsafe { slice::from_raw_parts_mut(paddr.as_mut_ptr(), PAGE_SIZE) };
 			let offset_in_page;
 			let offset_in_file;
 			let copy_len;
@@ -107,8 +104,7 @@ pub fn handle_page_fault(
 			if copy_len > 0 {
 				file.read(
 					offset_in_file,
-					(&mut buf[offset_in_page..(offset_in_page + copy_len)])
-						.into(),
+					(&mut buf[offset_in_page..(offset_in_page + copy_len)]).into(),
 					&OpenOptions::readwrite(),
 				)
 				.expect("failed to read file");

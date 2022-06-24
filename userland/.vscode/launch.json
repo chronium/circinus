@@ -22,6 +22,15 @@
       "target": "./build/csh",
       "cwd": "${workspaceRoot}",
       "valuesFormatting": "parseText",
+    },
+    {
+      "type": "gdb",
+      "request": "attach",
+      "name": "Attach to gdb",
+      "executable": "build/csh",
+      "target": ":1234",
+      "remote": true,
+      "cwd": "${workspaceRoot}",
     }
   ]
 }
