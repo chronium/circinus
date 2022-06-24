@@ -13,6 +13,7 @@ impl<'a> SyscallHandler<'a> {
 		if let Some(new_heap_end) = new_heap_end {
 			vm.expand_heap_to(new_heap_end)?;
 		}
+		trace!("brk {:x}", vm.heap_end().value());
 		Ok(vm.heap_end().value() as isize)
 	}
 }
