@@ -131,9 +131,7 @@ impl<'a> UserBufReader<'a> {
 		self.check_remaining_len(size_of::<T>())?;
 
 		let value = match &self.buf.inner {
-			Inner::Slice(src) => unsafe {
-				*(src.as_ptr().add(self.pos) as *const T)
-			},
+			Inner::Slice(src) => unsafe { *(src.as_ptr().add(self.pos) as *const T) },
 			Inner::User { base, .. } => base.add(self.pos).read()?,
 		};
 
@@ -150,8 +148,7 @@ impl<'a> UserBufReader<'a> {
 
 		match &self.buf.inner {
 			Inner::Slice(src) => {
-				dst[..copy_len]
-					.copy_from_slice(&src[self.pos..(self.pos + copy_len)]);
+				dst[..copy_len].copy_from_slice(&src[self.pos..(self.pos + copy_len)]);
 			}
 			Inner::User { base, .. } => {
 				base.add(self.pos).read_bytes(&mut dst[..copy_len])?;
@@ -229,11 +226,7 @@ impl<'a> UserBufWriter<'a> {
 		Ok(())
 	}
 
-	pub fn write_bytes_or_zeroes(
-		&mut self,
-		buf: &[u8],
-		max_copy_len: usize,
-	) -> Result<()> {
+	pub fn write_bytes_or_zeroes(&mut self, buf: &[u8], max_copy_len: usize) -> Result<()> {
 		let zeroed_after = min(buf.len(), max_copy_len);
 		self.check_remaining_len(zeroed_after)?;
 
@@ -252,8 +245,7 @@ impl<'a> UserBufWriter<'a> {
 
 		match &mut self.buf.inner {
 			InnerMut::Slice(dst) => {
-				dst[self.pos..(self.pos + copy_len)]
-					.copy_from_slice(&src[..copy_len]);
+				dst[self.pos..(self.pos + copy_len)].copy_from_slice(&src[..copy_len]);
 			}
 			InnerMut::User { base, .. } => {
 				base.add(self.pos).write_bytes(&src[..copy_len])?;
@@ -265,12 +257,8 @@ impl<'a> UserBufWriter<'a> {
 	}
 
 	pub fn write<T: Copy>(&mut self, value: T) -> Result<usize> {
-		let bytes = unsafe {
-			slice::from_raw_parts(
-				&value as *const T as *const u8,
-				size_of::<T>(),
-			)
-		};
+		let bytes =
+			unsafe { slice::from_raw_parts(&value as *const T as *const u8, size_of::<T>()) };
 		self.write_bytes(bytes)
 	}
 
@@ -322,7 +310,7 @@ impl<'a> core::fmt::Write for UserBufWriter<'a> {
 ///
 /// It's a copy of the string (not a reference) since the user can modify the
 /// buffer anytime to cause bad things in the kernel.
-pub(super) struct UserCStr {
+pub struct UserCStr {
 	string: String,
 }
 

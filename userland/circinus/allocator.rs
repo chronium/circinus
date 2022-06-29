@@ -4,9 +4,6 @@ use core::{
 	sync::atomic::{AtomicUsize, Ordering},
 };
 
-use alloc::string::ToString;
-use owo_colors::OwoColorize;
-
 use crate::sys;
 
 pub struct Allocator {
@@ -54,7 +51,7 @@ unsafe impl GlobalAlloc for Allocator {
 			.unwrap() as *mut _
 	}
 
-	unsafe fn dealloc(&self, ptr: *mut u8, layout: core::alloc::Layout) {
+	unsafe fn dealloc(&self, _ptr: *mut u8, _layout: core::alloc::Layout) {
 		// TODO
 	}
 }

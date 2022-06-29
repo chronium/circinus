@@ -14,6 +14,10 @@
       "sourceLanguages": [
         "rust"
       ]
+      // ,
+      // "initCommands": [
+      //   "gdb-remote localhost:1234",
+      // ]
     },
     {
       "name": "Debug",

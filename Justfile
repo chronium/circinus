@@ -37,6 +37,10 @@ build init release:
         exit 1; \
     fi;
 
+    pushd userland
+    just build {{init}} circinus
+    popd
+
     cargo -Z build-std=core,alloc -Z build-std-features=compiler-builtins-mem build --target kernel/arch/x64/x64.json {{ if release == "debug" { "" } else { "--release" } }}
     cp target/{{target}}/{{release}}/kernel build/kernel.elf
 

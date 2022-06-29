@@ -19,6 +19,5 @@
     "panic-strategy": "abort",
     "executables": true,
     "disable-redzone": true,
-    "emit-debug-gdb-scripts": false,
-    "frame-pointer": "always"
+    "emit-debug-gdb-scripts": false
 }

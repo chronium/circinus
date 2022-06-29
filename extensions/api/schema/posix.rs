@@ -1,7 +1,7 @@
 /// The inode number.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 #[repr(transparent)]
-pub struct INodeNo(usize);
+pub struct INodeNo(pub usize);
 
 impl INodeNo {
 	pub const fn new(no: usize) -> INodeNo {
@@ -16,12 +16,12 @@ impl INodeNo {
 /// The device file's ID.
 #[derive(Debug, Copy, Clone)]
 #[repr(transparent)]
-pub struct DevId(usize);
+pub struct DevId(pub usize);
 
 /// The number of hard links.
 #[derive(Debug, Copy, Clone)]
 #[repr(transparent)]
-pub struct NLink(usize);
+pub struct NLink(pub usize);
 
 /// The file size in bytes.
 #[derive(Debug, Copy, Clone)]
@@ -31,27 +31,27 @@ pub struct FileSize(pub isize);
 /// The user ID.
 #[derive(Debug, Copy, Clone)]
 #[repr(transparent)]
-pub struct UId(u32);
+pub struct UId(pub u32);
 
 /// The Group ID.
 #[derive(Debug, Copy, Clone)]
 #[repr(transparent)]
-pub struct GId(u32);
+pub struct GId(pub u32);
 
 /// The size in bytes of a block file file system I/O operations.
 #[derive(Debug, Copy, Clone)]
 #[repr(transparent)]
-pub struct BlockSize(isize);
+pub struct BlockSize(pub isize);
 
 /// The number of blocks.
 #[derive(Debug, Copy, Clone)]
 #[repr(transparent)]
-pub struct BlockCount(isize);
+pub struct BlockCount(pub isize);
 
 /// The file size in bytes.
 #[derive(Debug, Copy, Clone)]
 #[repr(transparent)]
-pub struct Time(isize);
+pub struct Time(pub isize);
 
 pub const S_IFMT: u32 = 0o170000;
 pub const S_IFCHR: u32 = 0o020000;
@@ -63,7 +63,7 @@ pub const O_ACCMODE: u32 = 0o3;
 
 #[derive(Debug, Copy, Clone)]
 #[repr(transparent)]
-pub struct FileMode(u32);
+pub struct FileMode(pub u32);
 
 impl FileMode {
 	pub fn new(value: u32) -> FileMode {

@@ -1,8 +1,7 @@
 {
-    "rust-analyzer.cargo.target": "circinus/x64.json",
-    "rust-analyzer.checkOnSave.allTargets": false,
-    "files.associations": {
-      "sys.h": "c",
-      "stdint.h": "c"
-    }
+  "rust-analyzer.checkOnSave.allTargets": false,
+  "files.associations": {
+    "sys.h": "c",
+    "stdint.h": "c"
+  },
 }

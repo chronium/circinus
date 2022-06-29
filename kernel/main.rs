@@ -31,7 +31,7 @@ use interrupt::attach_irq;
 use process::Process;
 use schema::{block, system::gpt};
 use syscall::SyscallHandler;
-use tempfs::{InMemoryFile, InMemoryTextFile, Tempfs};
+use tempfs::{InMemoryFile, Tempfs};
 use utils::once::Once;
 
 use crate::{
@@ -135,7 +135,7 @@ pub fn boot_kernel(#[cfg_attr(debug_assertions, allow(unused))] bootinfo: &BootI
 
 	devfs::init();
 
-	let tempfs = Tempfs::new();
+	let tempfs = Tempfs::new_root();
 
 	tempfs.root().add_file(
 		env!("INIT_FILE"),

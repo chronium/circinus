@@ -9,7 +9,7 @@ use crate::mm::PageAllocError;
 
 #[derive(Debug, Clone, Copy)]
 pub enum ErrorKind {
-	AllocationError,
+	AllocationError = 1,
 	PidAllocFailed,
 	PageFault,
 	OutOfMemory,
@@ -65,10 +65,7 @@ impl Error {
 		}
 	}
 
-	pub const fn with_message_const(
-		kind: ErrorKind,
-		message: &'static str,
-	) -> Error {
+	pub const fn with_message_const(kind: ErrorKind, message: &'static str) -> Error {
 		Error {
 			kind,
 			message: Some(ErrorMessage::StaticStr(message)),

@@ -3,7 +3,10 @@ use alloc::sync::Arc;
 use crate::{
 	ctypes::c_int,
 	io,
-	schema::unix::PathBuf,
+	schema::{
+		posix::{DevId, FileMode, FileSize, INodeNo},
+		unix::PathBuf,
+	},
 	user_buffer::{UserBuffer, UserBufferMut},
 	ErrorKind, Result,
 };
@@ -19,6 +22,10 @@ impl NodeId {
 
 	pub const fn as_u64(self) -> u64 {
 		self.0 as u64
+	}
+
+	pub const fn as_usize(self) -> usize {
+		self.0
 	}
 }
 
@@ -51,6 +58,7 @@ pub trait Filesystem: Send + Sync {
 	fn root(&self) -> Result<Arc<dyn Directory>>;
 }
 
+#[derive(Debug)]
 pub struct DirEntry {
 	pub path: PathBuf,
 	pub ftype: FileType,
@@ -89,12 +97,10 @@ pub trait File: Send + Sync + core::fmt::Debug {
 		options: &io::OpenOptions,
 	) -> Result<usize>;
 
-	fn write(
-		&self,
-		offset: usize,
-		buf: UserBuffer<'_>,
-		options: &io::OpenOptions,
-	) -> Result<usize>;
+	fn write(&self, offset: usize, buf: UserBuffer<'_>, options: &io::OpenOptions)
+		-> Result<usize>;
+
+	fn stat(&self) -> Result<Stat>;
 }
 
 #[derive(Debug)]
@@ -134,6 +140,13 @@ impl Node {
 	pub fn is_file(&self) -> bool {
 		matches!(self, Node::File(_))
 	}
+
+	pub fn stat(&self) -> Result<Stat> {
+		match self {
+			Node::Directory(dir) => dir.stat(),
+			Node::File(file) => file.stat(),
+		}
+	}
 }
 
 impl From<Arc<dyn File>> for Node {
@@ -151,6 +164,41 @@ impl From<Arc<dyn Directory>> for Node {
 #[derive(Debug, Copy, Clone)]
 pub struct Stat {
 	pub node_id: NodeId,
+	pub size: usize,
+	pub kind: FileKind,
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum FileKind {
+	RegularFile,
+	Directory,
+	CharDevice,
+}
+
+pub const S_IFMT: u32 = 0o170000;
+pub const S_IFCHR: u32 = 0o020000;
+pub const S_IFDIR: u32 = 0o040000;
+pub const S_IFREG: u32 = 0o100000;
+pub const S_IFLNK: u32 = 0o120000;
+
+impl From<FileKind> for u32 {
+	fn from(mode: FileKind) -> Self {
+		match mode {
+			FileKind::RegularFile => S_IFREG,
+			FileKind::Directory => S_IFDIR,
+			FileKind::CharDevice => S_IFCHR,
+		}
+	}
+}
+
+impl From<Stat> for crate::schema::posix::Stat {
+	fn from(stat: Stat) -> Self {
+		let mut result = Self::zeroed();
+		result.size = FileSize(stat.size as isize);
+		result.inode_no = INodeNo(stat.node_id.as_usize());
+		result.mode = FileMode(stat.kind.into());
+		result
+	}
 }
 
 pub mod interface;

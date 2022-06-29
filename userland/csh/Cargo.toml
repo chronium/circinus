@@ -13,3 +13,6 @@ base = { path = "../base" }
 circinus = { path = "../circinus" }
 
 cstr_core = { version = "0.2.5", features = ["nightly"] }
+
+[features]
+lunix = ["circinus/lunix"]

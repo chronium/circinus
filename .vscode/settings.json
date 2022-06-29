@@ -1,4 +1,14 @@
 {
     "rust-analyzer.cargo.target": "kernel/arch/x64/x64.json",
-    "rust-analyzer.checkOnSave.allTargets": false
+    "rust-analyzer.checkOnSave.allTargets": false,
+    "cSpell.words": [
+        "devcon",
+        "DEVFS",
+        "hashbrown",
+        "posix",
+        "rootfs",
+        "Syscall",
+        "Tempfs",
+        "userland"
+    ]
 }

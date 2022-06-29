@@ -34,14 +34,19 @@ impl Rootfs {
 		})
 	}
 
-	pub fn mount(
-		&mut self,
-		dir: Arc<dyn Directory>,
-		fs: Arc<dyn Filesystem>,
-	) -> Result<()> {
+	pub fn lookup<P: AsRef<Path>>(&self, path: P) -> Result<Node> {
+		self.lookup_node(path, true)
+	}
+
+	pub fn mount(&mut self, dir: Arc<dyn Directory>, fs: Arc<dyn Filesystem>) -> Result<()> {
 		self.mount_points
 			.insert(dir.stat()?.node_id, MountPoint { fs });
 		Ok(())
+	}
+
+	pub fn lookup_node<P: AsRef<Path>>(&self, path: P, follow_symlink: bool) -> Result<Node> {
+		self.lookup_path(path, follow_symlink)
+			.map(|path_comp| path_comp.node.clone())
 	}
 
 	pub fn lookup_path<P: AsRef<Path>>(
@@ -89,9 +94,7 @@ impl Rootfs {
 					.clone(),
 				_ => {
 					let node = match parent_dir.node.as_dir()?._lookup(name)? {
-						Node::Directory(dir) => match self
-							.lookup_mount_point(&dir)?
-						{
+						Node::Directory(dir) => match self.lookup_mount_point(&dir)? {
 							Some(mount_point) => mount_point.fs.root()?.into(),
 							None => dir.into(),
 						},
@@ -125,10 +128,7 @@ impl Rootfs {
 		Ok(parent_dir)
 	}
 
-	fn lookup_mount_point(
-		&self,
-		dir: &Arc<dyn Directory>,
-	) -> Result<Option<&MountPoint>> {
+	fn lookup_mount_point(&self, dir: &Arc<dyn Directory>) -> Result<Option<&MountPoint>> {
 		let stat = dir.stat()?;
 		Ok(self.mount_points.get(&stat.node_id))
 	}
