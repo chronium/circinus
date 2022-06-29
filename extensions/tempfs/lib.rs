@@ -1,5 +1,4 @@
 #![no_std]
-#![feature(trait_upcasting)]
 
 #[allow(unused_imports)]
 #[macro_use]
@@ -10,19 +9,12 @@ use core::sync::atomic::{AtomicUsize, Ordering};
 use alloc::{borrow::ToOwned, fmt::Debug, string::String, sync::Arc, vec::Vec};
 use api::{
 	hashbrown::HashMap,
-	io,
+	io, println,
 	sync::SpinLock,
 	user_buffer::{UserBufReader, UserBufWriter},
 	vfs::{self, NodeId, Stat},
 	ErrorKind, Result,
 };
-
-fn alloc_inode_no() -> NodeId {
-	// Inode #1 is reserved for the root dir.
-	static NEXT_INODE_NO: AtomicUsize = AtomicUsize::new(2);
-
-	NodeId::new(NEXT_INODE_NO.fetch_add(1, Ordering::SeqCst))
-}
 
 #[derive(Debug)]
 pub struct Tempfs {
@@ -32,12 +24,25 @@ pub struct Tempfs {
 impl Tempfs {
 	pub fn new() -> Self {
 		Self {
+			dir: Arc::new(TempfsDirectory::new(Self::alloc_inode_no())),
+		}
+	}
+
+	pub fn new_root() -> Self {
+		Self {
 			dir: Arc::new(TempfsDirectory::new(NodeId::new(1))),
 		}
 	}
 
 	pub fn root(&self) -> &Arc<TempfsDirectory> {
 		&self.dir
+	}
+
+	pub fn alloc_inode_no() -> NodeId {
+		// Inode #1 is reserved for the root dir.
+		static NEXT_INODE_NO: AtomicUsize = AtomicUsize::new(2);
+
+		NodeId::new(NEXT_INODE_NO.fetch_add(1, Ordering::Relaxed))
 	}
 }
 
@@ -60,12 +65,16 @@ impl TempfsDirectory {
 	pub fn new(node: NodeId) -> Self {
 		Self(SpinLock::new(DirectoryInner {
 			files: HashMap::new(),
-			stat: Stat { node_id: node },
+			stat: Stat {
+				node_id: node,
+				size: 0,
+				kind: vfs::FileKind::Directory,
+			},
 		}))
 	}
 
 	pub fn add_dir(&self, name: &str) -> Arc<Self> {
-		let dir = Arc::new(Self::new(alloc_inode_no()));
+		let dir = Arc::new(Self::new(Tempfs::alloc_inode_no()));
 		self.0
 			.lock()
 			.files
@@ -82,7 +91,7 @@ impl TempfsDirectory {
 }
 
 impl vfs::Directory for TempfsDirectory {
-	fn read_dir(&self, _index: usize) -> Option<api::vfs::DirEntry> {
+	fn read_dir(&self, index: usize) -> Option<api::vfs::DirEntry> {
 		todo!()
 	}
 
@@ -92,12 +101,8 @@ impl vfs::Directory for TempfsDirectory {
 			.files
 			.get(name)
 			.map(|tempfs_node| match tempfs_node {
-				TempfsNode::File(file) => {
-					(file.clone() as Arc<dyn vfs::File>).into()
-				}
-				TempfsNode::Directory(dir) => {
-					(dir.clone() as Arc<dyn vfs::Directory>).into()
-				}
+				TempfsNode::File(file) => (file.clone() as Arc<dyn vfs::File>).into(),
+				TempfsNode::Directory(dir) => (dir.clone() as Arc<dyn vfs::Directory>).into(),
 			})
 			.ok_or_else(|| ErrorKind::NoEntry.into())
 	}
@@ -115,6 +120,7 @@ pub enum TempfsNode {
 
 pub struct InMemoryFile {
 	data: SpinLock<Vec<u8>>,
+	stat: Stat,
 }
 
 #[derive(Debug)]
@@ -135,15 +141,17 @@ impl InMemoryFile {
 	pub fn new(data: &[u8]) -> Self {
 		Self {
 			data: SpinLock::new(data.to_owned()),
+			stat: Stat {
+				node_id: Tempfs::alloc_inode_no(),
+				size: data.len(),
+				kind: vfs::FileKind::RegularFile,
+			},
 		}
 	}
 }
 
 impl vfs::File for InMemoryFile {
-	fn open(
-		&self,
-		_options: &io::OpenOptions,
-	) -> Result<Option<Arc<dyn vfs::File>>> {
+	fn open(&self, _options: &io::OpenOptions) -> Result<Option<Arc<dyn vfs::File>>> {
 		Ok(None)
 	}
 
@@ -178,26 +186,34 @@ impl vfs::File for InMemoryFile {
 			.read_bytes(&mut data[offset..])
 			.map_err(|_| ErrorKind::BufferError.into())
 	}
+
+	fn stat(&self) -> Result<vfs::Stat> {
+		Ok(self.stat)
+	}
 }
 
 #[derive(Debug)]
 pub struct InMemoryTextFile {
 	data: SpinLock<String>,
+	stat: Stat,
 }
 
 impl InMemoryTextFile {
 	pub fn new<S: AsRef<str>>(data: S) -> Self {
+		let sdata = data.as_ref().to_owned();
 		Self {
-			data: SpinLock::new(data.as_ref().into()),
+			stat: Stat {
+				node_id: Tempfs::alloc_inode_no(),
+				size: sdata.len(),
+				kind: vfs::FileKind::RegularFile,
+			},
+			data: SpinLock::new(sdata),
 		}
 	}
 }
 
 impl vfs::File for InMemoryTextFile {
-	fn open(
-		&self,
-		_options: &io::OpenOptions,
-	) -> Result<Option<Arc<dyn vfs::File>>> {
+	fn open(&self, _options: &io::OpenOptions) -> Result<Option<Arc<dyn vfs::File>>> {
 		Ok(None)
 	}
 
@@ -231,5 +247,9 @@ impl vfs::File for InMemoryTextFile {
 		reader
 			.read_bytes(unsafe { &mut data.as_bytes_mut()[offset..] })
 			.map_err(|_| ErrorKind::BufferError.into())
+	}
+
+	fn stat(&self) -> Result<vfs::Stat> {
+		Ok(self.stat)
 	}
 }

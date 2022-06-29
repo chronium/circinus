@@ -11,5 +11,9 @@ crate-type = ["lib"]
 
 [dependencies]
 owo-colors = "3.2.0"
+rlibc = "1.0.0"
 
 base = { path = "../base" }
+
+[features]
+lunix = ["base/lunix"]

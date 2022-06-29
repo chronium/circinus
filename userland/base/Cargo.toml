@@ -9,3 +9,6 @@ name = "base"
 path = "lib.rs"
 
 [dependencies]
+
+[features]
+lunix = []

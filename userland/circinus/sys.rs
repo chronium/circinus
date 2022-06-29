@@ -1,9 +1,23 @@
 use core::arch::asm;
 
+use crate::fs::{path::Path, stat::Stat};
+
+#[cfg(feature = "lunix")]
+#[repr(usize)]
+pub enum Syscall {
+	Read = 0,
+	Write = 1,
+	Stat = 4,
+	Brk = 12,
+	Exit = 60,
+}
+
+#[cfg(not(feature = "lunix"))]
 #[repr(usize)]
 pub enum Syscall {
 	Write = 1,
 	Read = 2,
+	Stat = 3,
 	Brk = 128,
 	Exit = -1isize as usize,
 }
@@ -13,6 +27,18 @@ fn sys1(sys: Syscall, arg1: usize) -> usize {
 	unsafe {
 		asm!("syscall", 
     in("rdi") arg1,
+    in("rax") sys as usize,
+    lateout("rax")  ret);
+	}
+	ret
+}
+
+fn sys2(sys: Syscall, arg1: usize, arg2: usize) -> usize {
+	let mut ret;
+	unsafe {
+		asm!("syscall", 
+    in("rdi") arg1,
+    in("rsi") arg2,
     in("rax") sys as usize,
     lateout("rax")  ret);
 	}
@@ -43,6 +69,14 @@ pub fn write(fd: i32, buf: &[u8]) -> usize {
 		fd as usize,
 		buf.as_ptr() as usize,
 		buf.len(),
+	)
+}
+
+pub fn stat(path: &Path, buf: &mut Stat) -> usize {
+	sys2(
+		Syscall::Stat,
+		path.as_ptr() as usize,
+		buf as *mut Stat as usize,
 	)
 }
 

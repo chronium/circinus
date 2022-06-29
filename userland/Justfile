@@ -1,11 +1,17 @@
-build exec:
+build exec lunix:
   #!/usr/bin/env bash
   set -e
 
-  cargo build --release
-  cargo install --path {{exec}}
+  cargo +dev-x86_64-unknown-circinus install --path {{exec}} {{ if lunix == "lunix" { "--features lunix" } else { "" } }}
 
   pushd ./build/
   mv bin/* .
   rm -rf bin .crates*
   popd
+
+
+run exec lunix: (build exec lunix)
+  #!/usr/bin/env bash
+  set -e
+
+  ./build/{{exec}}

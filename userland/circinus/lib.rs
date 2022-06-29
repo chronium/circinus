@@ -7,6 +7,7 @@ use allocator::Allocator;
 extern crate alloc;
 
 pub mod allocator;
+pub mod fs;
 pub mod io;
 pub mod lang_items;
 pub mod sys;

@@ -1,12 +1,24 @@
-use api::{ctypes::c_int, vfs::Fd, Error, ErrorKind, Result};
+use api::{
+	ctypes::c_int,
+	schema::unix::{Path, PathBuf},
+	user_buffer::UserCStr,
+	vfs::Fd,
+	Error, ErrorKind, Result,
+};
 use environment::{address::UserVAddr, arch::PtRegs};
 
 const SYS_WRITE: usize = 1;
 const SYS_READ: usize = 2;
+const SYS_STAT: usize = 3;
 const SYS_BRK: usize = 128;
 const SYS_EXIT: usize = -1isize as usize;
 
 pub(self) const MAX_READ_WRITE_LEN: usize = core::isize::MAX as usize;
+
+fn resolve_path(uaddr: usize) -> Result<PathBuf> {
+	const PATH_MAX: usize = 512;
+	Ok(Path::new(UserCStr::new(UserVAddr::new_nonnull(uaddr)?, PATH_MAX)?.as_str()).to_path_buf())
+}
 
 pub struct SyscallHandler<'a> {
 	pub frame: &'a mut PtRegs,
@@ -53,6 +65,7 @@ impl<'a> SyscallHandler<'a> {
 		match n {
 			SYS_WRITE => self.sys_write(Fd::new(a1 as i32), UserVAddr::new_nonnull(a2)?, a3),
 			SYS_READ => self.sys_read(Fd::new(a1 as i32), UserVAddr::new_nonnull(a2)?, a3),
+			SYS_STAT => self.sys_stat(&resolve_path(a1)?, UserVAddr::new_nonnull(a2)?),
 			SYS_EXIT => self.sys_exit(a1 as c_int),
 			SYS_BRK => self.sys_brk(UserVAddr::new(a1)),
 			_ => {
@@ -71,6 +84,7 @@ fn syscall_name_by_number(n: usize) -> &'static str {
 	match n {
 		1 => "write",
 		2 => "read",
+		3 => "stat",
 		128 => "brk",
 		SYS_EXIT => "exit",
 		_ => "(unknown)",
@@ -80,4 +94,5 @@ fn syscall_name_by_number(n: usize) -> &'static str {
 pub(self) mod brk;
 pub(self) mod exit;
 pub(self) mod read;
+pub(self) mod stat;
 pub(self) mod write;

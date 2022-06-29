@@ -1,5 +1,4 @@
 #![cfg_attr(feature = "no_std", no_std)]
-#![feature(const_fn_trait_bound)]
 
 #[allow(unused_imports)]
 #[macro_use]

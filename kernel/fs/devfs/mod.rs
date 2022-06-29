@@ -18,7 +18,7 @@ impl Devfs {
 		let tempfs = Tempfs::new();
 		let root_dir = tempfs.root();
 
-		SERIAL_TTY.init(|| Arc::new(DevConsole::new()));
+		SERIAL_TTY.init(|| Arc::new(DevConsole::new(Tempfs::alloc_inode_no())));
 
 		root_dir.add_file("devcon", SERIAL_TTY.clone() as Arc<dyn File>);
 

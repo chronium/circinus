@@ -10,7 +10,7 @@ use core::{
 
 use atomic_refcell::{AtomicRef, AtomicRefCell};
 use crossbeam::atomic::AtomicCell;
-use goblin::elf64::program_header::{ProgramHeader, PT_GNU_STACK, PT_LOAD};
+use goblin::elf64::program_header::{ProgramHeader, PT_LOAD};
 
 use api::{
 	ctypes::c_int,
@@ -384,7 +384,7 @@ fn do_setup_userspace(
 		Auxv::Pagesz(PAGE_SIZE),
 		Auxv::Random(random_bytes),
 	];
-	const USER_STACK_LEN: usize = 128 * 1024; // TODO: Implement rlimit
+	const USER_STACK_LEN: usize = 1024 * 1024; // TODO: Implement rlimit
 	let init_stack_top = file_header_top.sub(file_header_len);
 	let user_stack_bottom = init_stack_top.sub(USER_STACK_LEN).value();
 	let user_heap_bottom = align_up(end_of_image, PAGE_SIZE);
