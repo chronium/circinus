@@ -1,0 +1,9 @@
+sys_includes = ["bits/ctype.h"]
+include_guard = "_CILIBC_CTYPE_H"
+language = "C"
+style = "Type"
+no_includes = true
+cpp_compat = true
+
+[enum]
+prefix_with_name = true

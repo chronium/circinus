@@ -1,0 +1,7 @@
+[package]
+name = "crtn"
+version = "0.1.0"
+
+[lib]
+name = "crtn"
+crate-type = ["staticlib"]

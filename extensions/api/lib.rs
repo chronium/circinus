@@ -1,4 +1,5 @@
 #![no_std]
+#![allow(non_camel_case_types)]
 #![feature(box_syntax)]
 
 extern crate log;
@@ -13,7 +14,7 @@ use ctypes::c_int;
 use environment::spinlock::SpinLock;
 use kernel::kernel_ops;
 use process::{Pid, ProcessState};
-use vfs::mount::Rootfs;
+use vfs::{mount::Rootfs, opened_file::OpenedFileTable};
 
 pub use environment::{debug_warn, print, println, warn_if_err, warn_once};
 pub use log::{debug, error, info, trace, warn};
@@ -29,9 +30,7 @@ pub mod arch {
 }
 
 pub mod mm {
-	pub use environment::page_allocator::{
-		alloc_pages, AllocPageFlags, PageAllocError,
-	};
+	pub use environment::page_allocator::{alloc_pages, AllocPageFlags, PageAllocError};
 }
 
 pub mod sync {
@@ -71,9 +70,11 @@ impl Process {
 		proc!(kernel_ops()).exit(status)
 	}
 
-	pub fn get_open_file_by_fid(
-		fd: vfs::Fd,
-	) -> result::Result<Arc<vfs::opened_file::OpenedFile>> {
+	pub fn opened_files() -> Arc<SpinLock<OpenedFileTable>> {
+		proc!(kernel_ops()).opened_files()
+	}
+
+	pub fn get_open_file_by_fid(fd: vfs::Fd) -> result::Result<Arc<vfs::opened_file::OpenedFile>> {
 		proc!(kernel_ops()).get_open_file_by_fid(fd)
 	}
 
@@ -96,20 +97,10 @@ impl Process {
 
 pub unsafe trait AsBuf: Sized {
 	fn as_buf(&self) -> &[u8] {
-		unsafe {
-			core::slice::from_raw_parts(
-				self as *const _ as _,
-				size_of::<Self>(),
-			)
-		}
+		unsafe { core::slice::from_raw_parts(self as *const _ as _, size_of::<Self>()) }
 	}
 	fn as_buf_mut(&mut self) -> &mut [u8] {
-		unsafe {
-			core::slice::from_raw_parts_mut(
-				self as *mut _ as _,
-				size_of::<Self>(),
-			)
-		}
+		unsafe { core::slice::from_raw_parts_mut(self as *mut _ as _, size_of::<Self>()) }
 	}
 }
 
@@ -272,6 +263,7 @@ pub mod posix;
 pub mod process;
 pub mod result;
 pub mod schema;
+#[macro_use]
 pub mod user_buffer;
 pub mod uuid;
 pub mod vfs;

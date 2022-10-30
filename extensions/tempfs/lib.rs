@@ -9,7 +9,7 @@ use core::sync::atomic::{AtomicUsize, Ordering};
 use alloc::{borrow::ToOwned, fmt::Debug, string::String, sync::Arc, vec::Vec};
 use api::{
 	hashbrown::HashMap,
-	io, println,
+	io,
 	sync::SpinLock,
 	user_buffer::{UserBufReader, UserBufWriter},
 	vfs::{self, NodeId, Stat},
@@ -91,8 +91,31 @@ impl TempfsDirectory {
 }
 
 impl vfs::Directory for TempfsDirectory {
-	fn read_dir(&self, index: usize) -> Option<api::vfs::DirEntry> {
-		todo!()
+	fn read_dir(&self, index: usize) -> Result<Option<vfs::DirEntry>> {
+		let dir_lock = self.0.lock();
+
+		let (name, node) = match dir_lock.files.iter().nth(index) {
+			Some((name, node)) => (name, node),
+			None => return Ok(None),
+		};
+
+		let entry = match node {
+			TempfsNode::Directory(dir) => {
+				let dir = dir.0.lock();
+				vfs::DirEntry {
+					node_id: dir.stat.node_id,
+					file_type: vfs::FileType::Directory,
+					name: name.clone(),
+				}
+			}
+			TempfsNode::File(file) => vfs::DirEntry {
+				node_id: file.stat()?.node_id,
+				file_type: vfs::FileType::RegularFile,
+				name: name.clone(),
+			},
+		};
+
+		Ok(Some(entry))
 	}
 
 	fn _lookup(&self, name: &str) -> Result<vfs::Node> {

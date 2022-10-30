@@ -1,8 +1,8 @@
 [workspace]
-members = ["csh", "circinus", "base"]
+members = ["csh", "circinus", "base", "stdt", "syscall"]
 
 [profile.release]
-opt-level = 3
+opt-level = 0
 codegen-units = 1
 lto = false
 debug-assertions = false

@@ -19,16 +19,16 @@ pub struct OpenedFile {
 }
 
 impl OpenedFile {
-	pub fn new(
-		path: Arc<PathComponent>,
-		options: io::OpenOptions,
-		pos: usize,
-	) -> Self {
+	pub fn new(path: Arc<PathComponent>, options: io::OpenOptions, pos: usize) -> Self {
 		Self {
 			path,
 			pos: AtomicCell::new(pos),
 			options: AtomicRefCell::new(options),
 		}
+	}
+
+	pub fn path(&self) -> &Arc<PathComponent> {
+		&self.path
 	}
 
 	pub fn as_file(&self) -> Result<&Arc<dyn File>> {
@@ -73,6 +73,7 @@ impl OpenedFile {
 }
 
 #[derive(Clone)]
+#[allow(dead_code)]
 struct LocalOpenedFile {
 	opened_file: Arc<OpenedFile>,
 	close_on_exec: bool,
@@ -145,6 +146,39 @@ impl OpenedFileTable {
 		}
 
 		Ok(())
+	}
+
+	pub fn open(&mut self, path: Arc<PathComponent>, options: io::OpenOptions) -> Result<Fd> {
+		self.alloc_fd(None).and_then(|fd| {
+			self.open_with_fixed_fd(
+				fd,
+				Arc::new(OpenedFile {
+					path,
+					pos: AtomicCell::new(0),
+					options: AtomicRefCell::new(options),
+				}),
+				options,
+			)
+			.map(|_| fd)
+		})
+	}
+
+	fn alloc_fd(&mut self, gte: Option<i32>) -> Result<Fd> {
+		let (mut i, gte) = match gte {
+			Some(gte) => (gte, gte),
+			None => ((self.prev_fd + 1) % FD_MAX, 0),
+		};
+
+		while i != self.prev_fd && i >= gte {
+			if matches!(self.files.get(i as usize), Some(None) | None) {
+				// It looks the fd number is not in use. Open the file at that fd.
+				return Ok(Fd::new(i));
+			}
+
+			i = (i + 1) % FD_MAX;
+		}
+
+		Err(Error::new(ErrorKind::BadFile))
 	}
 }
 

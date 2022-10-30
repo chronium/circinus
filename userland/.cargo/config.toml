@@ -6,17 +6,17 @@ build-std-features = ["compiler-builtins-mem"]
 
 [build]
 #target = "x86_64-unknown-linux-gnu"
-# rustflags = [
-#   "-C",
-#   "link-arg=-nostdlib",
-#   "-C",
-#   "target-feature=+crt-static",
-#   "-C",
-#   "relocation-model=static",
-# ]
-#target = "circinus/x64.json"
+rustflags = [
+  #"-C",
+  #"link-arg=-nostdlib",
+  #"-C",
+  #"target-feature=+crt-static",
+  "-C",
+  "relocation-model=static",
+]
+target = "circinus/x64.json"
 
-target = "x86_64-unknown-circinus"
+#target = "x86_64-unknown-circinus"
 
 [install]
 root = "build/"

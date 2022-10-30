@@ -2,7 +2,6 @@
 #![no_main]
 #![feature(never_type)]
 #![feature(box_syntax)]
-#![feature(const_btree_new)]
 #![feature(default_alloc_error_handler)]
 
 #[macro_use]
@@ -10,9 +9,6 @@ extern crate alloc;
 
 #[macro_use]
 extern crate environment;
-
-#[macro_use]
-extern crate api;
 
 use alloc::{boxed::Box, sync::Arc, vec::Vec};
 use api::{
@@ -195,3 +191,6 @@ pub mod schema;
 pub mod syscall;
 pub mod timer;
 pub mod tty;
+
+#[macro_use]
+extern crate api;

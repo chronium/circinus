@@ -1,12 +1,9 @@
-use alloc::sync::Arc;
+use alloc::{string::String, sync::Arc};
 
 use crate::{
 	ctypes::c_int,
 	io,
-	schema::{
-		posix::{DevId, FileMode, FileSize, INodeNo},
-		unix::PathBuf,
-	},
+	schema::posix::{FileMode, FileSize, INodeNo},
 	user_buffer::{UserBuffer, UserBufferMut},
 	ErrorKind, Result,
 };
@@ -60,32 +57,33 @@ pub trait Filesystem: Send + Sync {
 
 #[derive(Debug)]
 pub struct DirEntry {
-	pub path: PathBuf,
-	pub ftype: FileType,
+	pub node_id: NodeId,
+	pub file_type: FileType,
+	pub name: String,
 }
 
 pub trait Directory: Send + Sync + core::fmt::Debug {
 	fn _lookup(&self, name: &str) -> Result<Node>;
 
-	fn read_dir(&self, index: usize) -> Option<DirEntry>;
+	fn read_dir(&self, index: usize) -> Result<Option<DirEntry>>;
 
 	fn stat(&self) -> Result<Stat>;
 }
 
-pub struct ReadDir<'a> {
-	pub directory: Arc<&'a dyn Directory>,
-	pub current: usize,
-}
+// pub struct ReadDir<'a> {
+// 	pub directory: Arc<&'a dyn Directory>,
+// 	pub current: usize,
+// }
 
-impl Iterator for ReadDir<'_> {
-	type Item = DirEntry;
+// impl Iterator for ReadDir<'_> {
+// 	type Item = DirEntry;
 
-	fn next(&mut self) -> Option<Self::Item> {
-		let res = self.directory.read_dir(self.current);
-		self.current += 1;
-		res
-	}
-}
+// 	fn next(&mut self) -> Result<Self::Item> {
+// 		let res = self.directory.read_dir(self.current);
+// 		self.current += 1;
+// 		res
+// 	}
+// }
 
 pub trait File: Send + Sync + core::fmt::Debug {
 	fn open(&self, options: &io::OpenOptions) -> Result<Option<Arc<dyn File>>>;
@@ -173,6 +171,7 @@ pub enum FileKind {
 	RegularFile,
 	Directory,
 	CharDevice,
+	BlockDevice,
 }
 
 pub const S_IFMT: u32 = 0o170000;
@@ -180,6 +179,7 @@ pub const S_IFCHR: u32 = 0o020000;
 pub const S_IFDIR: u32 = 0o040000;
 pub const S_IFREG: u32 = 0o100000;
 pub const S_IFLNK: u32 = 0o120000;
+pub const S_IFBLK: u32 = 0o060000;
 
 impl From<FileKind> for u32 {
 	fn from(mode: FileKind) -> Self {
@@ -187,6 +187,7 @@ impl From<FileKind> for u32 {
 			FileKind::RegularFile => S_IFREG,
 			FileKind::Directory => S_IFDIR,
 			FileKind::CharDevice => S_IFCHR,
+			FileKind::BlockDevice => S_IFBLK,
 		}
 	}
 }

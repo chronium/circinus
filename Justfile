@@ -41,6 +41,17 @@ build init release:
     just build {{init}} circinus
     popd
 
+    just build_kern {{init}} {{release}}
+
+build_kern init release:
+    #!/usr/bin/env bash
+    set -e
+    export INIT_FILE={{init}}
+    if { [ release != "debug" ] && [ release != "release" ] ;} then \
+        echo Unknown build mode \"{{release}}\";\
+        exit 1; \
+    fi;
+
     cargo -Z build-std=core,alloc -Z build-std-features=compiler-builtins-mem build --target kernel/arch/x64/x64.json {{ if release == "debug" { "" } else { "--release" } }}
     cp target/{{target}}/{{release}}/kernel build/kernel.elf
 
@@ -106,3 +117,6 @@ run_gdb init="init" release="debug": (build init release) (image img)
 
 kvm init="init" release="debug": (build init release) (image img)
     sudo qemu-system-{{qemutarget}} -enable-kvm -cpu host {{qemu-args}}
+
+run_file file release="debug": (build_kern file release) (image img)
+  qemu-system-{{qemutarget}} -cpu Haswell {{qemu-args}}

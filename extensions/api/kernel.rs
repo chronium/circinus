@@ -23,12 +23,7 @@ static OPS: StaticCell<&dyn KernelOps> = StaticCell::new(&NopOps);
 struct NopOps;
 
 impl KernelOps for NopOps {
-	fn attach_irq(
-		&self,
-		_irq: u8,
-		_f: Box<dyn FnMut() + Send + Sync + 'static>,
-	) {
-	}
+	fn attach_irq(&self, _irq: u8, _f: Box<dyn FnMut() + Send + Sync + 'static>) {}
 
 	fn register_block_driver(&self, _driver: Box<dyn BlockDriver>) {}
 

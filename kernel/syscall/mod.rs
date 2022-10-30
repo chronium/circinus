@@ -1,15 +1,16 @@
 use api::{
 	ctypes::c_int,
-	schema::unix::{Path, PathBuf},
+	schema::{unix::{Path, PathBuf}, posix::FileMode},
 	user_buffer::UserCStr,
 	vfs::Fd,
-	Error, ErrorKind, Result,
+	Error, ErrorKind, Result, io::OpenFlags,
 };
 use environment::{address::UserVAddr, arch::PtRegs};
 
 const SYS_WRITE: usize = 1;
 const SYS_READ: usize = 2;
 const SYS_STAT: usize = 3;
+const SYS_OPEN: usize = 4;
 const SYS_BRK: usize = 128;
 const SYS_EXIT: usize = -1isize as usize;
 
@@ -66,6 +67,10 @@ impl<'a> SyscallHandler<'a> {
 			SYS_WRITE => self.sys_write(Fd::new(a1 as i32), UserVAddr::new_nonnull(a2)?, a3),
 			SYS_READ => self.sys_read(Fd::new(a1 as i32), UserVAddr::new_nonnull(a2)?, a3),
 			SYS_STAT => self.sys_stat(&resolve_path(a1)?, UserVAddr::new_nonnull(a2)?),
+			SYS_OPEN => self.sys_open(
+                &resolve_path(a1)?,
+                bitflags_from_user!(OpenFlags, a2 as i32)?,
+                FileMode::new(a3 as u32),),
 			SYS_EXIT => self.sys_exit(a1 as c_int),
 			SYS_BRK => self.sys_brk(UserVAddr::new(a1)),
 			_ => {
@@ -85,6 +90,7 @@ fn syscall_name_by_number(n: usize) -> &'static str {
 		1 => "write",
 		2 => "read",
 		3 => "stat",
+		4 => "open",
 		128 => "brk",
 		SYS_EXIT => "exit",
 		_ => "(unknown)",
@@ -96,3 +102,4 @@ pub(self) mod exit;
 pub(self) mod read;
 pub(self) mod stat;
 pub(self) mod write;
+pub(self) mod open;

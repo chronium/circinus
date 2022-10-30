@@ -14,6 +14,8 @@ pub enum ErrorKind {
 	PageFault,
 	OutOfMemory,
 
+	NotSupported,
+
 	Invalid,
 
 	TooBig,
@@ -27,6 +29,8 @@ pub enum ErrorKind {
 	NotAFile,
 	NoEntry,
 	Unsupported,
+
+	IsADirectory,
 
 	BadFile,
 

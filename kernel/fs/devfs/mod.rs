@@ -6,10 +6,11 @@ use api::{
 use tempfs::Tempfs;
 use utils::once::Once;
 
-use self::devconsole::DevConsole;
+use self::{devconsole::DevConsole, fb0::Framebuffer};
 
 pub static DEVFS: Once<Arc<Devfs>> = Once::new();
 pub static SERIAL_TTY: Once<Arc<DevConsole>> = Once::new();
+pub static FRAMEBUFFER_FILE: Once<Arc<Framebuffer>> = Once::new();
 
 pub struct Devfs(Tempfs);
 
@@ -19,8 +20,10 @@ impl Devfs {
 		let root_dir = tempfs.root();
 
 		SERIAL_TTY.init(|| Arc::new(DevConsole::new(Tempfs::alloc_inode_no())));
+		FRAMEBUFFER_FILE.init(|| Arc::new(Framebuffer::new(Tempfs::alloc_inode_no())));
 
 		root_dir.add_file("devcon", SERIAL_TTY.clone() as Arc<dyn File>);
+		root_dir.add_file("Framebuffer", FRAMEBUFFER_FILE.clone() as Arc<dyn File>);
 
 		Self(tempfs)
 	}
@@ -37,3 +40,4 @@ pub fn init() {
 }
 
 pub mod devconsole;
+pub mod fb0;

@@ -2,3 +2,6 @@
 	path = extern/limine
 	url = https://github.com/limine-bootloader/limine.git
 	branch = v2.0-branch
+[submodule "userland/libc/core_io"]
+	path = userland/libc/core_io
+	url = https://gitlab.redox-os.org/redox-os/core_io.git

@@ -1,9 +1,11 @@
 use alloc::{borrow::ToOwned, string::String, sync::Arc};
 use hashbrown::HashMap;
 
-use crate::{schema::unix::Path, ErrorKind, Result};
+use crate::{posix::CwdOrFd, schema::unix::Path, ErrorKind, Result};
 
-use super::{interface::PathComponent, Directory, Filesystem, Node, NodeId};
+use super::{
+	interface::PathComponent, opened_file::OpenedFileTable, Directory, Filesystem, Node, NodeId,
+};
 
 const DEFAULT_SYMLINK_FOLLOW_MAX: usize = 8;
 
@@ -49,6 +51,41 @@ impl Rootfs {
 			.map(|path_comp| path_comp.node.clone())
 	}
 
+	pub fn lookup_path_at<P: AsRef<Path>>(
+		&self,
+		opened_files: &OpenedFileTable,
+		cwd_or_fd: &CwdOrFd,
+		path: &P,
+		follow_symlink: bool,
+	) -> Result<Arc<PathComponent>> {
+		self.do_lookup_path(
+			&self.resolve_cwd_or_fd(opened_files, cwd_or_fd, path)?,
+			path,
+			follow_symlink,
+			self.symlink_follow_limit,
+		)
+	}
+
+	pub fn resolve_cwd_or_fd<P: AsRef<Path>>(
+		&self,
+		opened_files: &OpenedFileTable,
+		cwd_or_fd: &CwdOrFd,
+		path: &P,
+	) -> Result<Arc<PathComponent>> {
+		let path = path.as_ref();
+		if path.is_absolute() {
+			Ok(self.root_path.clone())
+		} else {
+			match cwd_or_fd {
+				CwdOrFd::AtCwd => Ok(self.cwd_path.clone()),
+				CwdOrFd::Fd(fd) => {
+					let fd = opened_files.get(*fd)?;
+					Ok(fd.path().clone())
+				}
+			}
+		}
+	}
+
 	pub fn lookup_path<P: AsRef<Path>>(
 		&self,
 		path: P,
@@ -72,8 +109,8 @@ impl Rootfs {
 		&self,
 		lookup_from: &Arc<PathComponent>,
 		path: P,
-		follow_symlink: bool,
-		symlink_follow_limit: usize,
+		_follow_symlink: bool,
+		_symlink_follow_limit: usize,
 	) -> Result<Arc<PathComponent>> {
 		let path = path.as_ref();
 

@@ -1,0 +1,13 @@
+[unstable]
+build-std = ["core", "compiler_builtins", "alloc"]
+build-std-features = ["compiler-builtins-mem"]
+
+[build]
+rustflags = [
+  "-C",
+  "relocation-model=static"
+]
+target = "src/x64.json"
+
+[install]
+root = "../build"
