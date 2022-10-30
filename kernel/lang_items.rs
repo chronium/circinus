@@ -8,8 +8,7 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
 	use core::sync::atomic::Ordering;
 
 	if PANICKED.load(Ordering::SeqCst) {
-		environment::print::get_debug_printer()
-			.print_bytes(b"\ndouble panic!\n");
+		environment::print::get_debug_printer().print_bytes(b"\ndouble panic!\n");
 		environment::arch::halt();
 	}
 

@@ -8,7 +8,7 @@
       "type": "lldb",
       "request": "launch",
       "name": "Launch Program",
-      "program": "./build/csh",
+      "program": "./target/x86_64-unknown-circinus/release/stdt",
       "cwd": "${workspaceRoot}",
       "valuesFormatting": "parseText",
       "sourceLanguages": [

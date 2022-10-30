@@ -75,8 +75,7 @@ impl VAddr {
 	}
 
 	pub const fn is_accessible_from_kernel(addr: usize) -> bool {
-		(addr) >= KERNEL_BASE_ADDR
-			&& (addr) < KERNEL_BASE_ADDR + KERNEL_STRAIGHT_MAP_PADDR_END
+		(addr) >= KERNEL_BASE_ADDR && (addr) < KERNEL_BASE_ADDR + KERNEL_STRAIGHT_MAP_PADDR_END
 	}
 
 	pub const fn as_ptr<T>(self) -> *const T {
@@ -140,8 +139,7 @@ impl fmt::Display for VAddr {
 
 extern "C" {
 	fn copy_from_user(dst: *mut u8, src: *const u8, len: usize);
-	fn strncpy_from_user(dst: *mut u8, src: *const u8, max_len: usize)
-		-> usize;
+	fn strncpy_from_user(dst: *mut u8, src: *const u8, max_len: usize) -> usize;
 	fn copy_to_user(dst: *mut u8, src: *const u8, len: usize);
 	fn memset_user(dst: *mut u8, value: u8, len: usize);
 }
@@ -177,9 +175,7 @@ impl UserVAddr {
 		}
 	}
 
-	pub const fn new_nonnull(
-		addr: usize,
-	) -> Result<Self, NullUserPointerError> {
+	pub const fn new_nonnull(addr: usize) -> Result<Self, NullUserPointerError> {
 		match Self::new(addr) {
 			Some(uaddr) => Ok(uaddr),
 			None => Err(NullUserPointerError),
@@ -227,10 +223,7 @@ impl UserVAddr {
 	pub fn read<T>(self) -> Result<T, AccessError> {
 		let mut buf: MaybeUninit<T> = MaybeUninit::uninit();
 		self.read_bytes(unsafe {
-			slice::from_raw_parts_mut(
-				buf.as_mut_ptr() as *mut u8,
-				size_of::<T>(),
-			)
+			slice::from_raw_parts_mut(buf.as_mut_ptr() as *mut u8, size_of::<T>())
 		})?;
 		Ok(unsafe { buf.assume_init() })
 	}
@@ -239,11 +232,7 @@ impl UserVAddr {
 		call_usercopy_hook();
 		self.access_ok(buf.len())?;
 		unsafe {
-			copy_from_user(
-				buf.as_mut_ptr(),
-				self.value() as *const u8,
-				buf.len(),
-			);
+			copy_from_user(buf.as_mut_ptr(), self.value() as *const u8, buf.len());
 		}
 		Ok(())
 	}
@@ -255,21 +244,14 @@ impl UserVAddr {
 	pub fn read_cstr(self, buf: &mut [u8]) -> Result<usize, AccessError> {
 		call_usercopy_hook();
 		self.access_ok(buf.len())?;
-		let read_len = unsafe {
-			strncpy_from_user(
-				buf.as_mut_ptr(),
-				self.value() as *const u8,
-				buf.len(),
-			)
-		};
+		let read_len =
+			unsafe { strncpy_from_user(buf.as_mut_ptr(), self.value() as *const u8, buf.len()) };
 		Ok(read_len)
 	}
 
 	pub fn write<T>(self, buf: &T) -> Result<usize, AccessError> {
 		let len = size_of::<T>();
-		self.write_bytes(unsafe {
-			slice::from_raw_parts(buf as *const T as *const u8, len)
-		})?;
+		self.write_bytes(unsafe { slice::from_raw_parts(buf as *const T as *const u8, len) })?;
 		Ok(len)
 	}
 

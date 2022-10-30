@@ -80,7 +80,7 @@ pub struct Process {
 	state: AtomicCell<ProcessState>,
 	vm: AtomicRefCell<Option<Arc<SpinLock<Vm>>>>,
 	rootfs: Arc<SpinLock<Rootfs>>,
-	opened_files: SpinLock<OpenedFileTable>,
+	opened_files: Arc<SpinLock<OpenedFileTable>>,
 }
 
 impl Process {
@@ -94,7 +94,7 @@ impl Process {
 			state: AtomicCell::new(ProcessState::Runnable),
 			vm: AtomicRefCell::new(None),
 			rootfs: INITIAL_ROOT_FS.clone(),
-			opened_files: SpinLock::new(OpenedFileTable::new()),
+			opened_files: Arc::new(SpinLock::new(OpenedFileTable::new())),
 		});
 
 		process_group.lock().add(Arc::downgrade(&proc));
@@ -117,7 +117,7 @@ impl Process {
 			state: AtomicCell::new(ProcessState::Runnable),
 			vm: AtomicRefCell::new(None),
 			rootfs: INITIAL_ROOT_FS.clone(),
-			opened_files: SpinLock::new(OpenedFileTable::new()),
+			opened_files: Arc::new(SpinLock::new(OpenedFileTable::new())),
 		});
 
 		process_group.lock().add(Arc::downgrade(&proc));
@@ -168,7 +168,7 @@ impl Process {
 			state: AtomicCell::new(ProcessState::Runnable),
 			vm: AtomicRefCell::new(Some(Arc::new(SpinLock::new(entry.vm)))),
 			rootfs,
-			opened_files: SpinLock::new(opened_files),
+			opened_files: Arc::new(SpinLock::new(opened_files)),
 		});
 
 		process_group.lock().add(Arc::downgrade(&proc));
@@ -193,6 +193,10 @@ impl Process {
 
 	pub fn rootfs(&self) -> &Arc<SpinLock<Rootfs>> {
 		&self.rootfs
+	}
+
+	pub fn _opened_files(&self) -> &Arc<SpinLock<OpenedFileTable>> {
+		&self.opened_files
 	}
 
 	/// The virtual memory space. It's `None` if the process is a kernel thread.
@@ -324,6 +328,10 @@ impl ProcessOps for Process {
 
 	fn pid(&self) -> api::process::Pid {
 		self._pid()
+	}
+
+	fn opened_files(&self) -> Arc<SpinLock<OpenedFileTable>> {
+		self._opened_files().clone()
 	}
 }
 

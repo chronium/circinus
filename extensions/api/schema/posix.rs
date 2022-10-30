@@ -61,6 +61,11 @@ pub const S_IFLNK: u32 = 0o120000;
 
 pub const O_ACCMODE: u32 = 0o3;
 
+#[allow(unused)]
+pub const O_RDONLY: u32 = 0o0;
+pub const O_WRONLY: u32 = 0o1;
+pub const O_RDWR: u32 = 0o2;
+
 #[derive(Debug, Copy, Clone)]
 #[repr(transparent)]
 pub struct FileMode(pub u32);

@@ -7,6 +7,7 @@ use utils::alignment::align_up;
 use crate::{Error, ErrorKind, Result};
 
 /// Parses a bitflags field given from the user. Returns `Result<T>`.
+#[macro_export]
 macro_rules! bitflags_from_user {
 	($st:tt, $input:expr) => {{
 		let bits = $input;
@@ -16,7 +17,7 @@ macro_rules! bitflags_from_user {
 				bits
 			);
 
-			crate::Error::new(crate::result::Errno::ENOSYS)
+			api::result::Error::new(api::result::ErrorKind::NoSyscall)
 		})
 	}};
 }

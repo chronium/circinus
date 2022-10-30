@@ -3,7 +3,7 @@ use environment::spinlock::SpinLock;
 
 use crate::{
 	ctypes::c_int,
-	vfs::{mount::Rootfs, opened_file::OpenedFile, Fd},
+	vfs::{mount::Rootfs, opened_file::{OpenedFile, OpenedFileTable}, Fd},
 	Result,
 };
 
@@ -34,6 +34,7 @@ impl Pid {
 pub trait ProcessOps {
 	fn rootfs(&self) -> &Arc<SpinLock<Rootfs>>;
 	fn exit(&self, status: c_int) -> !;
+	fn opened_files(&self) -> Arc<SpinLock<OpenedFileTable>>;
 	fn get_open_file_by_fid(&self, fd: Fd) -> Result<Arc<OpenedFile>>;
 	fn set_state(&self, new_state: ProcessState);
 	fn has_pending_signals(&self) -> bool;

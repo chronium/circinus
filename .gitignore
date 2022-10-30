@@ -16,3 +16,5 @@ virtio-net.pcap
 /userland/tmp
 
 **/*.log
+**/target/**
+**/sysroot/**

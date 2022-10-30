@@ -191,6 +191,23 @@ impl Framebuffer {
 	fn cols(&self) -> usize {
 		self.height / self.font.height
 	}
+
+	pub fn size(&self) -> (usize, usize) {
+		(self.width, self.height)
+	}
+
+	pub fn write(&mut self, data: &[u8]) {
+		let mut i = 0;
+		for y in 0..self.height {
+			for x in 0..self.width {
+				unsafe {
+					let px = self.ptr.as_mut_ptr::<Pixel>().add(x + y * self.width);
+					*px = Pixel::new(data[i], data[i + 1], data[i + 2]);
+					i += 4;
+				}
+			}
+		}
+	}
 }
 
 impl vte::Perform for Framebuffer {
@@ -268,7 +285,7 @@ impl vte::Perform for Framebuffer {
 	}
 }
 static TERMINAL_PARSER: Once<spin::Mutex<vte::Parser>> = Once::new();
-static FRAMEBUFFER: Once<spin::Mutex<Framebuffer>> = Once::new();
+pub static FRAMEBUFFER: Once<spin::Mutex<Framebuffer>> = Once::new();
 
 struct FramebufferPrinter;
 
@@ -276,7 +293,9 @@ impl Printer for FramebufferPrinter {
 	fn print_bytes(&self, s: &[u8]) {
 		for b in s {
 			SERIAL0.send_char(*b);
-			TERMINAL_PARSER.lock().advance(&mut *FRAMEBUFFER.lock(), *b);
+			if !FRAMEBUFFER.is_locked() {
+				TERMINAL_PARSER.lock().advance(&mut *FRAMEBUFFER.lock(), *b);
+			}
 		}
 	}
 }

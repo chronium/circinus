@@ -21,11 +21,11 @@ pub struct DevConsole {
 }
 
 impl DevConsole {
-	pub fn new(node: NodeId) -> Self {
+	pub fn new(node_id: NodeId) -> Self {
 		Self {
 			line_reader: LineReader::new(),
 			stat: Stat {
-				node_id: node,
+				node_id,
 				size: 0,
 				kind: vfs::FileKind::CharDevice,
 			},
