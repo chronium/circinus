@@ -17,6 +17,7 @@ pub mod idt;
 pub mod interrupt;
 pub mod ioapic;
 pub mod paging;
+pub mod pc8042;
 pub mod pit;
 pub mod profile;
 pub mod serial;

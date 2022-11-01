@@ -3,6 +3,7 @@
 #![feature(never_type)]
 #![feature(box_syntax)]
 #![feature(default_alloc_error_handler)]
+#![feature(const_btree_new)]
 
 #[macro_use]
 extern crate alloc;

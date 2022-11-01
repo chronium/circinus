@@ -4,13 +4,12 @@ use x86::{
 	io::outb,
 };
 
-use super::{
-	apic, bootinfo, cpu_local, gdt, idt, ioapic, pit, serial, syscall, tss, vga,
-};
+use super::{apic, bootinfo, cpu_local, gdt, idt, ioapic, pit, serial, syscall, tss, vga};
 use crate::{
 	address::{PAddr, VAddr},
 	bootinfo::BootInfo,
 	logger, page_allocator,
+	x64::pc8042,
 };
 
 fn check_cpuid_feature(name: &str, supported: bool) {
@@ -79,8 +78,9 @@ unsafe extern "C" fn bsp_early_init(boot_magic: u32, boot_params: u64) -> ! {
 	vga::init();
 	logger::init();
 
-	let boot_info =
-		bootinfo::parse(boot_magic, PAddr::new(boot_params as usize));
+	pc8042::init();
+
+	let boot_info = bootinfo::parse(boot_magic, PAddr::new(boot_params as usize));
 	page_allocator::init(&boot_info.ram_areas);
 
 	logger::set_log_filter(&boot_info.log_filter);
