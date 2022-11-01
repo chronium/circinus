@@ -11,9 +11,7 @@ use api::{
 };
 use utils::ring_buffer::RingBuffer;
 
-use crate::process::{
-	current_process, process_group::ProcessGroup, wait_queue::WaitQueue,
-};
+use crate::process::{current_process, process_group::ProcessGroup, wait_queue::WaitQueue};
 
 bitflags! {
   pub struct LFlag: u32 {
@@ -112,16 +110,11 @@ impl LineReader {
 		self.buf.lock().is_writable()
 	}
 
-	pub fn foreground_process_group(
-		&self,
-	) -> Option<Arc<SpinLock<ProcessGroup>>> {
+	pub fn foreground_process_group(&self) -> Option<Arc<SpinLock<ProcessGroup>>> {
 		self.foreground_process_group.lock().upgrade()
 	}
 
-	pub fn set_foreground_process_group(
-		&self,
-		pg: Weak<SpinLock<ProcessGroup>>,
-	) {
+	pub fn set_foreground_process_group(&self, pg: Weak<SpinLock<ProcessGroup>>) {
 		*self.foreground_process_group.lock() = pg;
 	}
 
@@ -150,7 +143,7 @@ impl LineReader {
           0x03 /* ETX: End of Text (^C) */ if termios.is_cooked_mode() => {
             todo!();
           }
-          0x7f /* backspace */ if termios.is_cooked_mode() => {
+          0x7f | 0x8 /* backspace */ if termios.is_cooked_mode() => {
             if !current_line.is_empty() {
               current_line.backspace();
               callback(LineControl::Backspace);
@@ -207,8 +200,7 @@ impl LineReader {
 			let mut buf_lock = self.buf.lock();
 			while writer.remaining_len() > 0 {
 				// TODO: Until newline.
-				if let Some(slice) = buf_lock.pop_slice(writer.remaining_len())
-				{
+				if let Some(slice) = buf_lock.pop_slice(writer.remaining_len()) {
 					writer.write_bytes(slice)?;
 				} else {
 					break;

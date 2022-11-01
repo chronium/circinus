@@ -2,7 +2,10 @@ use crate::{address::UserVAddr, system};
 
 use core::fmt;
 
-use super::{apic::ack_interrupt, ioapic::VECTOR_IRQ_BASE, serial::SERIAL0_IRQ, PageFaultReason};
+use super::{
+	apic::ack_interrupt, ioapic::VECTOR_IRQ_BASE, pc8042::PS2KBD_IRQ, serial::SERIAL0_IRQ,
+	PageFaultReason,
+};
 use x86::{
 	controlregs::cr2,
 	current::rflags::{self, RFlags},
@@ -84,6 +87,9 @@ unsafe extern "C" fn x64_handle_interrupt(vec: u8, frame: *const InterruptFrame)
 			match irq {
 				TIMER_IRQ | TIMER_IRQ2 => {
 					system().on_timer_irq();
+				}
+				PS2KBD_IRQ => {
+					super::pc8042::ps2kbd_irq_handler();
 				}
 				SERIAL0_IRQ => {
 					super::serial::serial0_irq_handler();

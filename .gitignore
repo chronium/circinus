@@ -18,3 +18,5 @@ virtio-net.pcap
 **/*.log
 **/target/**
 **/sysroot/**
+
+*.o

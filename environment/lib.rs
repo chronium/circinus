@@ -100,8 +100,7 @@ pub mod arch {
 		serial::SERIAL0,
 		syscall::PtRegs,
 		tss::TSS,
-		PageFaultReason, KERNEL_BASE_ADDR, KERNEL_STRAIGHT_MAP_PADDR_END,
-		PAGE_SIZE, TICK_HZ,
+		PageFaultReason, KERNEL_BASE_ADDR, KERNEL_STRAIGHT_MAP_PADDR_END, PAGE_SIZE, TICK_HZ,
 	};
 
 	pub mod x64 {

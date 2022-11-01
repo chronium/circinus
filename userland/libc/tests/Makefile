@@ -20,7 +20,7 @@ CFLAGS?=\
 	../sysroot/lib/crtn.o \
 	../sysroot/lib/libc.a
 
-.PHONY: all
+.PHONY: all clean
 
 all: $(BINS)
 

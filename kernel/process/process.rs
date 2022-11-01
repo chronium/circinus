@@ -155,6 +155,11 @@ impl Process {
 			)),
 			OpenOptions::empty(),
 		)?;
+		opened_files.open_with_fixed_fd(
+			Fd::new(2),
+			Arc::new(OpenedFile::new(console, OpenFlags::O_WRONLY.into(), 0)),
+			OpenOptions::empty(),
+		)?;
 
 		let entry = setup_userspace(executable_path, argv, &[], &rootfs)?;
 		let pid = Pid::new(1);

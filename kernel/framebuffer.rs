@@ -124,6 +124,9 @@ impl Framebuffer {
 				self.row += self.font.stride;
 				self.col = 0;
 			}
+			'\t' => {
+				self.col += self.font.width * 4;
+			}
 			_ => {
 				if self.row + 1 > self.height {
 					self.col = 0;
