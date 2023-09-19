@@ -8,13 +8,14 @@ use core::ops::{Deref, DerefMut};
 
 use alloc::sync::Arc;
 use api::{
-	info,
+	info, println,
 	schema::fs::{self, register_partition_prober, PartitionProber},
 	sync::SpinLock,
+	trace, vfs,
 };
 use utils::bytes_parser::BytesParser;
 
-use crate::{ext2::Ext2, structure::Superblock};
+use crate::{ext2::Ext2, filesystem::Ext2Filesystem, structure::Superblock};
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
@@ -39,7 +40,11 @@ pub enum Ext2Error {}
 pub struct Ext2Prober;
 
 impl PartitionProber for Ext2Prober {
-	fn probe(&self, partition: Arc<SpinLock<dyn fs::Partition>>) {
+	fn probe(
+		&self,
+		partition: Arc<SpinLock<dyn fs::Partition>>,
+		number: usize,
+	) -> Option<Arc<dyn vfs::Filesystem>> {
 		let part = partition.lock();
 		let superblock_sectors = part.in_sectors(1024);
 		let mut buf = vec![0u8; 1024];
@@ -51,16 +56,18 @@ impl PartitionProber for Ext2Prober {
 
 		if parser.peek_le_u16_at(56).unwrap() != 0xef53 {
 			info!("Partition {:?} is not ext2", part.name());
-			return;
+			return None;
 		}
 
 		info!("Found ext2 partition {:?}", part.name());
 		let superblock = Superblock::parse(&mut parser);
-		info!("{:#?}", superblock);
+		trace!("{:#?}", superblock);
 
 		drop(part);
-		let mut ext2 = Ext2::new(partition, superblock);
+		let mut ext2 = Ext2::new(partition, number, superblock);
 		ext2.parse_bgd_table();
+
+		Some(Arc::new(Ext2Filesystem(Arc::new(ext2), number)))
 	}
 }
 

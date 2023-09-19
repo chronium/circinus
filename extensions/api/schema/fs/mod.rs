@@ -1,6 +1,6 @@
 use core::ops::Range;
 
-use alloc::{boxed::Box, sync::Arc, vec::Vec};
+use alloc::{boxed::Box, collections::BTreeMap, sync::Arc, vec::Vec};
 use environment::spinlock::SpinLock;
 
 pub use directory::Directory;
@@ -13,8 +13,9 @@ use crate::kernel::kernel_ops;
 
 use self::vfs::Vfs;
 
-static PARTITION_PROBERS: SpinLock<Vec<Box<dyn PartitionProber>>> =
-	SpinLock::new(vec![]);
+static PARTITION_PROBERS: SpinLock<Vec<Box<dyn PartitionProber>>> = SpinLock::new(vec![]);
+pub static PARTITIONS: SpinLock<BTreeMap<usize, Arc<dyn crate::vfs::Filesystem>>> =
+	SpinLock::new(BTreeMap::new());
 
 pub static VFS: Once<SpinLock<Vfs>> = Once::new();
 
@@ -31,16 +32,17 @@ pub trait Partition: Send + Sync {
 		assert!(buf.len() >= sectors.clone().count() * block_size);
 
 		for (i, sector) in sectors.enumerate() {
-			self.read_sector(
-				sector,
-				&mut buf[i * block_size..(i + 1) * block_size],
-			)
+			self.read_sector(sector, &mut buf[i * block_size..(i + 1) * block_size])
 		}
 	}
 }
 
 pub trait PartitionProber: Send + Sync {
-	fn probe(&self, partition: Arc<SpinLock<dyn Partition>>);
+	fn probe(
+		&self,
+		partition: Arc<SpinLock<dyn Partition>>,
+		number: usize,
+	) -> Option<Arc<dyn crate::vfs::Filesystem>>;
 }
 
 pub fn register_partition_prober(prober: Box<dyn PartitionProber>) {
@@ -50,9 +52,11 @@ pub fn register_partition_prober(prober: Box<dyn PartitionProber>) {
 pub fn init() {
 	VFS.init(|| SpinLock::new(Vfs::new()));
 
-	for partition in kernel_ops().request_partitions() {
+	for (num, partition) in kernel_ops().request_partitions().iter().enumerate() {
 		for prober in PARTITION_PROBERS.lock().iter() {
-			prober.probe(partition.clone());
+			if let Some(partition) = prober.probe(partition.clone(), num) {
+				PARTITIONS.lock().insert(num, partition);
+			}
 		}
 	}
 }
