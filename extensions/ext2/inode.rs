@@ -117,8 +117,7 @@ impl Inode {
 		let lower_size = parser.consume_le_u32().unwrap();
 		let last_access = posix::Timestamp(parser.consume_le_u32().unwrap());
 		let creation = posix::Timestamp(parser.consume_le_u32().unwrap());
-		let last_modification =
-			posix::Timestamp(parser.consume_le_u32().unwrap());
+		let last_modification = posix::Timestamp(parser.consume_le_u32().unwrap());
 		let deletion = posix::Timestamp(parser.consume_le_u32().unwrap());
 		let gid = parser.consume_le_u16().unwrap();
 		let hard_links = parser.consume_le_u16().unwrap();
@@ -130,15 +129,13 @@ impl Inode {
 		let doubly_pointer = BlockPointer(parser.consume_le_u32().unwrap());
 		let triply_pointer = BlockPointer(parser.consume_le_u32().unwrap());
 		let gen_number = parser.consume_le_u32().unwrap();
-		let extended_attrib_block =
-			BlockPointer(parser.consume_le_u32().unwrap());
+		let extended_attrib_block = BlockPointer(parser.consume_le_u32().unwrap());
 		let extended_dir_block = BlockPointer(parser.consume_le_u32().unwrap());
 		let fragment_pointer = BlockPointer(parser.consume_le_u32().unwrap());
 		let _osval2 = parser.consume_bytes(12).unwrap().try_into().unwrap();
 
 		Self {
-			type_and_perms: TypeAndPermissions::from_bits(type_and_perms)
-				.unwrap(),
+			type_and_perms: TypeAndPermissions::from_bits(type_and_perms).unwrap(),
 			uid,
 			lower_size,
 			last_access,

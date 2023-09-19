@@ -15,7 +15,10 @@ use alloc::{boxed::Box, sync::Arc, vec::Vec};
 use api::{
 	driver::block::BlockDriver,
 	kernel::KernelOps,
-	schema::{fs::Partition, unix::Path},
+	schema::{
+		fs::{Partition, PARTITIONS},
+		unix::Path,
+	},
 	sync::SpinLock,
 	vfs::mount::Rootfs,
 };
@@ -126,7 +129,7 @@ pub fn boot_kernel(#[cfg_attr(debug_assertions, allow(unused))] bootinfo: &BootI
 
 	schema::system::init();
 
-	// ext2::init();
+	ext2::init();
 	api::schema::fs::init();
 	interrupt::init();
 
@@ -143,12 +146,22 @@ pub fn boot_kernel(#[cfg_attr(debug_assertions, allow(unused))] bootinfo: &BootI
 	);
 
 	let dev_dir = tempfs.root().add_dir("Devices");
+	let mnt_dir = tempfs.root().add_dir("Mounts");
+	let ext2 = mnt_dir.add_dir("ext2");
 
 	let mut rootfs = Rootfs::new(Arc::new(tempfs)).unwrap();
 
 	rootfs
 		.mount(dev_dir, DEVFS.clone())
 		.expect("failed to mount /Devices");
+
+	rootfs.mount(ext2, PARTITIONS.lock().get(&0).unwrap().clone());
+
+	println!("{:?}", rootfs.lookup("/Mounts/ext2/test.txt"));
+	println!(
+		"{:?}",
+		rootfs.lookup("/Mounts/ext2/test.txt").unwrap().stat()
+	);
 
 	let devcon = rootfs
 		.lookup_path(Path::new("/Devices/devcon"), true)

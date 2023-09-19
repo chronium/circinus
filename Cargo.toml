@@ -11,7 +11,7 @@ members = [
   "extensions/virtio_net",
   "extensions/virtio_blk",
 ]
-exclude = ["userland"]
+exclude = ["userland", "extern/rust"]
 
 [profile.release]
 opt-level = 3

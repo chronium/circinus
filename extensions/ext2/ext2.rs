@@ -1,20 +1,25 @@
-use core::sync::atomic::AtomicUsize;
+use core::{fmt, sync::atomic::AtomicUsize};
 
 use alloc::{sync::Arc, vec::Vec};
-use api::{info, owo_colors::OwoColorize, schema::fs, sync::SpinLock};
+use api::{
+	info,
+	owo_colors::OwoColorize,
+	schema::fs,
+	sync::SpinLock,
+	vfs::{self, NodeId},
+};
 use utils::{alignment::align_up, bytes_parser::BytesParser, once::Once};
 
 use crate::{
 	dirent::Dirent,
 	inode::Inode,
-	structure::{
-		BlockGroupDescriptor, ReadOnlyFeatures, RequiredFeatures, Superblock,
-	},
+	structure::{BlockGroupDescriptor, ReadOnlyFeatures, RequiredFeatures, Superblock},
 	BlockPointer,
 };
 
 pub struct Ext2 {
 	physical_partition: Arc<SpinLock<dyn fs::Partition>>,
+	partition_number: usize,
 	superblock: Arc<Superblock>,
 	block_group_descriptors: Arc<Once<Vec<BlockGroupDescriptor>>>,
 	block_size: usize,
@@ -24,10 +29,108 @@ pub struct Ext2 {
 	next_fid: Arc<AtomicUsize>,
 }
 
+impl fmt::Debug for Ext2 {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		f.debug_struct("Ext2")
+			.field("superblock", &self.superblock)
+			.field("block_size", &self.block_size)
+			.field("inode_size", &self.inode_size)
+			.field("dirent_has_type", &self.dirent_has_type)
+			.field("large_file_size", &self.large_file_size)
+			.field("next_fid", &self.next_fid)
+			.finish()
+	}
+}
+
+#[derive(Debug)]
+struct DriveInode {
+	id: NodeId,
+	inode: Inode,
+	ext2: Arc<Ext2>,
+}
+
+impl vfs::Directory for DriveInode {
+	fn read_dir(&self, offset: usize) -> api::Result<Option<vfs::DirEntry>> {
+		todo!()
+	}
+
+	fn _lookup(&self, name: &str) -> api::Result<vfs::Node> {
+		for inode in self.ext2.read_dirent(&self.inode) {
+			if inode.name == name {
+				match inode.dirent_type {
+					crate::dirent::DirentType::Unknown => todo!(),
+					crate::dirent::DirentType::Regular => {
+						return Ok(vfs::Node::File(Arc::new(DriveInode {
+							inode: self.ext2.read_inode(inode.inode as usize),
+							ext2: self.ext2.clone(),
+							id: NodeId::new(inode.inode as usize),
+						})));
+					}
+					crate::dirent::DirentType::Directory => {
+						return Ok(vfs::Node::Directory(Arc::new(DriveInode {
+							inode: self.ext2.read_inode(inode.inode as usize),
+							ext2: self.ext2.clone(),
+							id: NodeId::new(inode.inode as usize),
+						})));
+					}
+					crate::dirent::DirentType::CharDevice => todo!(),
+					crate::dirent::DirentType::BlockDevice => todo!(),
+					crate::dirent::DirentType::Fifo => todo!(),
+					crate::dirent::DirentType::Socket => todo!(),
+					crate::dirent::DirentType::Symlink => todo!(),
+				}
+			}
+		}
+
+		Err(api::ErrorKind::NotFound.into())
+	}
+
+	fn stat(&self) -> api::Result<vfs::Stat> {
+		Ok(vfs::Stat {
+			node_id: self.id,
+			size: self.inode.lower_size as usize,
+			kind: vfs::FileKind::Directory,
+		})
+	}
+}
+
+impl vfs::File for DriveInode {
+	fn open(&self, options: &api::io::OpenOptions) -> api::Result<Option<Arc<dyn vfs::File>>> {
+		todo!()
+	}
+
+	fn read(
+		&self,
+		offset: usize,
+		dst: api::user_buffer::UserBufferMut<'_>,
+		options: &api::io::OpenOptions,
+	) -> api::Result<usize> {
+		todo!()
+	}
+
+	fn write(
+		&self,
+		offset: usize,
+		buf: api::user_buffer::UserBuffer<'_>,
+		options: &api::io::OpenOptions,
+	) -> api::Result<usize> {
+		todo!()
+	}
+
+	fn stat(&self) -> api::Result<vfs::Stat> {
+		Ok(vfs::Stat {
+			node_id: self.id,
+			size: self.inode.lower_size as usize,
+			kind: vfs::FileKind::RegularFile,
+		})
+	}
+}
+
 impl Clone for Ext2 {
 	fn clone(&self) -> Self {
 		Self {
 			physical_partition: self.physical_partition.clone(),
+			partition_number: self.partition_number,
 			superblock: self.superblock.clone(),
 			block_group_descriptors: self.block_group_descriptors.clone(),
 			block_size: self.block_size.clone(),
@@ -42,6 +145,7 @@ impl Clone for Ext2 {
 impl Ext2 {
 	pub fn new(
 		physical_partition: Arc<SpinLock<dyn fs::Partition>>,
+		partition_number: usize,
 		superblock: Superblock,
 	) -> Self {
 		let block_size = superblock.block_size as usize;
@@ -71,6 +175,7 @@ impl Ext2 {
 
 		Self {
 			physical_partition,
+			partition_number,
 			superblock: Arc::new(superblock),
 			block_group_descriptors: Arc::new(Once::new()),
 			block_size,
@@ -92,8 +197,7 @@ impl Ext2 {
 	}
 
 	pub fn inode_bgd(&self, inode: usize) -> BlockGroupDescriptor {
-		self.block_group_descriptors
-			[(inode - 1) / self.superblock.inodes_per_group as usize]
+		self.block_group_descriptors[(inode - 1) / self.superblock.inodes_per_group as usize]
 			.clone()
 	}
 
@@ -102,9 +206,7 @@ impl Ext2 {
 		let mut parser = BytesParser::new(&mut buf);
 
 		loop {
-			if let Some(dirent) =
-				Dirent::parse(&mut parser, self.dirent_has_type)
-			{
+			if let Some(dirent) = Dirent::parse(&mut parser, self.dirent_has_type) {
 				res.push(dirent);
 			}
 
@@ -124,8 +226,7 @@ impl Ext2 {
 		}
 
 		let bgd_count = self.superblock.bgd_count();
-		let blocks_count =
-			align_up(bgd_count, self.block_size) / self.block_size;
+		let blocks_count = align_up(bgd_count, self.block_size) / self.block_size;
 
 		let mut buf = vec![0u8; blocks_count * self.block_size];
 		self.read_block(self.bgd_block(), &mut buf);
@@ -145,8 +246,7 @@ impl Ext2 {
 		let partition = self.physical_partition.lock();
 
 		let sectors_per_block =
-			align_up(self.block_size, partition.block_size())
-				/ partition.block_size();
+			align_up(self.block_size, partition.block_size()) / partition.block_size();
 
 		let start_sector = *block as usize * sectors_per_block;
 		let end_sector = start_sector + sectors_per_block;
@@ -168,19 +268,26 @@ impl Ext2 {
 		let index = (inode - 1) % self.superblock.inodes_per_group as usize;
 		let containing_block = (index * self.inode_size) / self.block_size;
 
-		let buf = self.read_block_alloc(BlockPointer(
-			bgd.inode_table + containing_block as u32,
-		));
+		let buf = self.read_block_alloc(BlockPointer(bgd.inode_table + containing_block as u32));
 
 		Inode::parse(&mut BytesParser::new(&buf[index * self.inode_size..]))
 	}
 
-	pub fn read_dirent(&self, inode: Inode) -> Vec<Dirent> {
+	pub fn read_dirent(&self, inode: &Inode) -> Vec<Dirent> {
 		let mut res = vec![];
 
 		assert!(inode.direct_pointers.count() == 1, "not yet implemented");
 		self.read_dirents(inode.direct_pointers.at(0), &mut res);
 
 		res
+	}
+
+	pub fn root(ext2: Arc<Ext2>) -> Arc<dyn vfs::Directory> {
+		let inode = ext2.read_inode(2);
+		Arc::new(DriveInode {
+			ext2: ext2.clone(),
+			id: NodeId::new(2),
+			inode,
+		})
 	}
 }
