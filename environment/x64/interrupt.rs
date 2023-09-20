@@ -40,13 +40,12 @@ struct InterruptFrame {
 }
 
 impl fmt::Debug for InterruptFrame {
-	#[allow(unaligned_references)]
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		write!(
-			f,
-			"RIP={:x}, RSP={:x}, CS={:x}, ERR={:x}",
-			self.rip, self.rsp, self.cs, self.error
-		)
+		let rip = self.rip;
+		let rsp = self.rsp;
+		let cs = self.cs;
+		let error = self.error;
+		write!(f, "RIP={rip:x}, RSP={rsp:x}, CS={cs:x}, ERR={error:x}")
 	}
 }
 
@@ -57,7 +56,6 @@ extern "C" {
 }
 
 #[no_mangle]
-#[allow(unaligned_references)]
 unsafe extern "C" fn x64_handle_interrupt(vec: u8, frame: *const InterruptFrame) {
 	let frame = &*frame;
 
@@ -69,14 +67,11 @@ unsafe extern "C" fn x64_handle_interrupt(vec: u8, frame: *const InterruptFrame)
 		&& vec != 14
 		&& vec != 36
 	{
-		trace!(
-			"interrupt({}): rip={:x}, rsp={:x}, err={:x}, cr2={:x}",
-			vec,
-			frame.rip,
-			frame.rsp,
-			frame.error,
-			x86::controlregs::cr2()
-		);
+		let rip = frame.rip;
+		let rsp = frame.rsp;
+		let error = frame.error;
+		let cr2 = cr2();
+		trace!("interrupt({vec}): rip={rip:x}, rsp={rsp:x}, err={error:x}, cr2={cr2:x}",);
 	}
 
 	match vec {
@@ -170,11 +165,11 @@ unsafe extern "C" fn x64_handle_interrupt(vec: u8, frame: *const InterruptFrame)
 				|| frame.rip == usercopy2 as *const u8 as u64
 				|| frame.rip == usercopy3 as *const u8 as u64;
 			if !occurred_in_user {
+				let rip = frame.rip;
+				let rsp = frame.rsp;
+				let cr2 = cr2();
 				panic!(
-					"page fault occurred in the kernel: rip={:x}, rsp={:x}, vaddr={:x}",
-					frame.rip,
-					frame.rsp,
-					cr2()
+					"page fault occurred in the kernel: rip={rip:x}, rsp={rsp:x}, vaddr={cr2:x}",
 				);
 			}
 

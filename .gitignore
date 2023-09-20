@@ -2,14 +2,9 @@
 Cargo.lock
 loopback_dev
 /isotmp
-build/kernel.elf
-build/os.img
-build/kernel.sym
 virtio-net.pcap
 
 /userland/target
-
-/userland/build
 
 /userland/write/write
 /userland/exit/exit
@@ -20,3 +15,5 @@ virtio-net.pcap
 **/sysroot/**
 
 *.o
+
+**/build/**

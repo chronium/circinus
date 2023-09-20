@@ -1,0 +1,21 @@
+{
+  "folders": [
+    {
+      "path": "userland/libc"
+    },
+    {
+      "path": "userland"
+    },
+    {
+      "path": "."
+    }
+  ],
+  "settings": {
+    "rust-analyzer.cargo.target": "x86_64-unknown-circinus",
+    "rust-analyzer.checkOnSave.allTargets": false,
+    "rust-analyzer.rustfmt.overrideCommand": [
+      "/home/chronium/src/rust/build/x86_64-unknown-linux-gnu/stage1-tools-bin/rustfmt",
+      "--edition=2021"
+    ],
+  }
+}

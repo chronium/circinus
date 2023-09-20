@@ -71,18 +71,13 @@ macro_rules! warn_if_err {
 	($result:expr) => {
 		if cfg!(debug_assertions) {
 			if let Err(err) = $result {
-				$crate::debug_warn!(
-					"{}:{}: error returned: {:?}",
-					file!(),
-					line!(),
-					err
-				);
+				$crate::debug_warn!("{}:{}: error returned: {:?}", file!(), line!(), err);
 			}
 		}
 	};
 }
 
 pub fn init() {
-	let printer = box LoggedPrinter::new(get_debug_printer());
+	let printer = Box::new(LoggedPrinter::new(get_debug_printer()));
 	set_debug_printer(Box::leak(printer));
 }

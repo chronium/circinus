@@ -1,11 +1,10 @@
 #![no_std]
-#![feature(box_syntax)]
 
 extern crate alloc;
 
 use core::{hint::spin_loop, mem::size_of};
 
-use alloc::sync::Arc;
+use alloc::{boxed::Box, sync::Arc};
 use api::{
 	address::VAddr,
 	driver::{
@@ -107,18 +106,14 @@ pub struct VirtioBlock {
 }
 
 impl VirtioBlock {
-	pub fn new(
-		transport: Arc<dyn VirtioTransport>,
-	) -> Result<Self, VirtioAttachError> {
+	pub fn new(transport: Arc<dyn VirtioTransport>) -> Result<Self, VirtioAttachError> {
 		let mut virtio = Virtio::new(transport);
 		virtio.initialize(VIRTIO_BLK_F_SIZE, 1)?;
 
-		let capacity_blocks = virtio
-			.read_device_config64(offset_of!(VirtioBlockConfig, capacity) as u16)
-			as usize;
-		let block_size = virtio
-			.read_device_config16(offset_of!(VirtioBlockConfig, blk_size) as u16)
-			as usize;
+		let capacity_blocks =
+			virtio.read_device_config64(offset_of!(VirtioBlockConfig, capacity) as u16) as usize;
+		let block_size =
+			virtio.read_device_config16(offset_of!(VirtioBlockConfig, blk_size) as u16) as usize;
 
 		let capacity = ByteSize::new(capacity_blocks * block_size);
 
@@ -132,12 +127,7 @@ impl VirtioBlock {
 		})
 	}
 
-	pub fn operate(
-		&mut self,
-		op: BlockOp,
-		sector: u64,
-		buf: &mut [u8],
-	) -> VirtioBlockStatus {
+	pub fn operate(&mut self, op: BlockOp, sector: u64, buf: &mut [u8]) -> VirtioBlockStatus {
 		assert!(buf.len() == self.block_size);
 		trace!(
 			"{}: {} sector {}",
@@ -151,8 +141,7 @@ impl VirtioBlock {
 		);
 
 		let status_buffer = VolatileCell::new(VirtioBlockStatus::_NotReady);
-		let status_addr =
-			VAddr::new(status_buffer.as_ptr() as usize).as_paddr();
+		let status_addr = VAddr::new(status_buffer.as_ptr() as usize).as_paddr();
 
 		let req = VirtioBlockRequest {
 			_type: match op {
@@ -264,7 +253,7 @@ impl DeviceProber for VirtioBlockProber {
 			}
 		};
 
-		register_block_driver(box VirtioBlockDriver::new(device.clone()));
+		register_block_driver(Box::new(VirtioBlockDriver::new(device.clone())));
 		attach_irq(pci_device.config().interrupt_line(), move || {
 			device.lock().handle_irq();
 		});
@@ -295,5 +284,5 @@ impl DeviceProber for VirtioBlockProber {
 }
 
 pub fn init() {
-	register_driver_prober(box VirtioBlockProber)
+	register_driver_prober(Box::new(VirtioBlockProber))
 }

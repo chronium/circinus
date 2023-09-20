@@ -14,6 +14,7 @@ members = [
 exclude = ["userland", "extern/rust"]
 
 [profile.release]
+panic = "abort"
 opt-level = 3
 codegen-units = 1
 lto = true
@@ -22,6 +23,7 @@ debug-assertions = false
 overflow-checks = false
 
 [profile.dev]
+panic = "abort"
 opt-level = 0
 codegen-units = 1
 lto = false

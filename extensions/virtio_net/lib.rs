@@ -1,13 +1,10 @@
 #![no_std]
-#![feature(box_syntax)]
 
 extern crate alloc;
 
-use alloc::{format, sync::Arc};
+use alloc::{boxed::Box, format, sync::Arc};
 use api::{
-	driver::{
-		net::MacAddress, register_driver_prober, DeviceProber, VirtioMmioDevice,
-	},
+	driver::{net::MacAddress, register_driver_prober, DeviceProber, VirtioMmioDevice},
 	memoffset::offset_of,
 	sync::SpinLock,
 	trace, warn,
@@ -39,17 +36,13 @@ pub struct VirtioNet {
 }
 
 impl VirtioNet {
-	pub fn new(
-		transport: Arc<dyn VirtioTransport>,
-	) -> Result<Self, VirtioAttachError> {
+	pub fn new(transport: Arc<dyn VirtioTransport>) -> Result<Self, VirtioAttachError> {
 		let mut virtio = Virtio::new(transport);
 		virtio.initialize(VIRTIO_NET_F_MAC, 2 /* RX and TX queues. */)?;
 
 		let mut mac_addr = [0; 6];
 		for (i, byte) in mac_addr.iter_mut().enumerate() {
-			*byte = virtio.read_device_config8(
-				(offset_of!(VirtioNetConfig, mac) + i) as u16,
-			);
+			*byte = virtio.read_device_config8((offset_of!(VirtioNetConfig, mac) + i) as u16);
 		}
 
 		virtio::info!(
@@ -113,5 +106,5 @@ impl DeviceProber for VirtioNetProber {
 }
 
 pub fn init() {
-	register_driver_prober(box VirtioNetProber);
+	register_driver_prober(Box::new(VirtioNetProber));
 }

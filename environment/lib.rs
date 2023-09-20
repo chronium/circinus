@@ -1,6 +1,4 @@
 #![no_std]
-#![feature(default_alloc_error_handler)]
-#![feature(box_syntax)]
 
 #[allow(unused_imports)]
 #[macro_use]
