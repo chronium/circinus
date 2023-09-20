@@ -1,7 +1,6 @@
 #![no_std]
 #![allow(non_camel_case_types)]
-#![feature(box_syntax)]
-#![feature(const_btree_new)]
+#![feature(const_btree_len)]
 
 extern crate log;
 

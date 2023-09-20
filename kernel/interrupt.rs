@@ -11,17 +11,15 @@ use utils::bitmap::BitMap;
 fn empty_irq_handler() {}
 
 type IrqHandler = dyn FnMut() + Send + Sync;
-const UNINITIALIZED_IRQ_HANDLER: MaybeUninit<Box<IrqHandler>> =
-	MaybeUninit::uninit();
+const UNINITIALIZED_IRQ_HANDLER: MaybeUninit<Box<IrqHandler>> = MaybeUninit::uninit();
 static IRQ_HANDLERS: SpinLock<[MaybeUninit<Box<IrqHandler>>; 256]> =
 	SpinLock::new([UNINITIALIZED_IRQ_HANDLER; 256]);
-static ATTACHED_IRQS: SpinLock<BitMap<32 /* = 256 / 8 */>> =
-	SpinLock::new(BitMap::zeroed());
+static ATTACHED_IRQS: SpinLock<BitMap<32 /* = 256 / 8 */>> = SpinLock::new(BitMap::zeroed());
 
 pub fn init() {
 	let mut handlers = IRQ_HANDLERS.lock();
 	for handler in handlers.iter_mut() {
-		handler.write(box empty_irq_handler);
+		handler.write(Box::new(empty_irq_handler));
 	}
 }
 

@@ -14,7 +14,7 @@ use x86::current::segmentation::wrfsbase;
 
 use super::KERNEL_STACK_SIZE;
 
-#[repr(C, packed)]
+#[repr(C)]
 pub struct Process {
 	rsp: UnsafeCell<u64>,
 	pub(super) fsbase: AtomicCell<u64>,
@@ -169,24 +169,27 @@ impl Process {
 	}
 }
 
-#[allow(unaligned_references)]
 pub fn switch_thread(prev: &Process, next: &Process) {
 	let head = cpu_local_head();
 
 	// Switch the kernel stack.
-	head.rsp0 = (next.syscall_stack.as_vaddr().value() + KERNEL_STACK_SIZE) as u64;
+	let sstack = &next.syscall_stack;
+	let istack = &next.interrupt_stack;
+	head.rsp0 = (sstack.as_vaddr().value() + KERNEL_STACK_SIZE) as u64;
 	TSS.as_mut()
-		.set_rsp0((next.interrupt_stack.as_vaddr().value() + KERNEL_STACK_SIZE) as u64);
+		.set_rsp0((istack.as_vaddr().value() + KERNEL_STACK_SIZE) as u64);
 
 	// Save and restore the XSAVE area (i.e. XMM/YMM registrers).
 	unsafe {
 		use core::arch::x86_64::{_xrstor64, _xsave64};
 
 		let xsave_mask = x86::controlregs::xcr0().bits();
-		if let Some(xsave_area) = prev.xsave_area.as_ref() {
+		let prev_xsave_area = &prev.xsave_area;
+		if let Some(xsave_area) = prev_xsave_area.as_ref() {
 			_xsave64(xsave_area.as_mut_ptr(), xsave_mask);
 		}
-		if let Some(xsave_area) = next.xsave_area.as_ref() {
+		let next_xsave_area = &next.xsave_area;
+		if let Some(xsave_area) = next_xsave_area.as_ref() {
 			_xrstor64(xsave_area.as_mut_ptr(), xsave_mask);
 		}
 	}
@@ -195,7 +198,10 @@ pub fn switch_thread(prev: &Process, next: &Process) {
 	head.rsp3 = 0xbaad_5a5a_5b5b_baad;
 
 	unsafe {
-		wrfsbase(next.fsbase.load());
-		do_switch_thread(prev.rsp.get(), next.rsp.get());
+		let fsbase = &next.fsbase;
+		wrfsbase(fsbase.load());
+		let prsp = &prev.rsp;
+		let nrsp = &next.rsp;
+		do_switch_thread(prsp.get(), nrsp.get());
 	}
 }

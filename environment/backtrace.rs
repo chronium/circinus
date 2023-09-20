@@ -109,7 +109,7 @@ pub struct CapturedBacktrace {
 impl CapturedBacktrace {
 	/// Returns a saved backtrace.
 	pub fn capture() -> CapturedBacktrace {
-		let mut trace = box ArrayVec::new();
+		let mut trace = Box::new(ArrayVec::new());
 		Backtrace::current_frame().traverse(|_, vaddr| {
 			if let Some(symbol) = resolve_symbol(vaddr) {
 				let _ = trace.try_push(CapturedBacktraceFrame {

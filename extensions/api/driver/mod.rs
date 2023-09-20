@@ -8,8 +8,7 @@ use crate::kernel::kernel_ops;
 
 use self::pci::PciDevice;
 
-static DEVICE_PROBERS: SpinLock<Vec<Box<dyn DeviceProber>>> =
-	SpinLock::new(vec![]);
+static DEVICE_PROBERS: SpinLock<Vec<Box<dyn DeviceProber>>> = SpinLock::new(vec![]);
 
 pub trait Driver: Send + Sync {
 	fn name(&self) -> &str;
@@ -25,7 +24,7 @@ pub fn register_driver_prober(driver: Box<dyn DeviceProber>) {
 }
 
 pub fn attach_irq<F: FnMut() + Send + Sync + 'static>(irq: u8, f: F) {
-	kernel_ops().attach_irq(irq, box f)
+	kernel_ops().attach_irq(irq, Box::new(f))
 }
 
 pub fn init(pci_enabled: bool, mmio_devices: &[VirtioMmioDevice]) {

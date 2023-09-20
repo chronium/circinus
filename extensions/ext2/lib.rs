@@ -1,12 +1,11 @@
 #![no_std]
-#![feature(box_syntax)]
 
 #[macro_use]
 extern crate alloc;
 
 use core::ops::{Deref, DerefMut};
 
-use alloc::sync::Arc;
+use alloc::{boxed::Box, sync::Arc};
 use api::{
 	info, println,
 	schema::fs::{self, register_partition_prober, PartitionProber},
@@ -72,7 +71,7 @@ impl PartitionProber for Ext2Prober {
 }
 
 pub fn init() {
-	register_partition_prober(box Ext2Prober)
+	register_partition_prober(Box::new(Ext2Prober))
 }
 
 pub mod dirent;

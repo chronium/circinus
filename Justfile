@@ -15,7 +15,7 @@ virtio-blk := "virtio-blk-pci,drive=dsk0,disable-legacy=on,disable-modern=off"
 # + " -device " + virtio-net
 
 # qemu-args := " -serial stdio" + " -m " + mem + " -drive " + drive + " -no-reboot -d cpu_reset -s" + " -netdev " + dev + " -object " + pcap + " -device " + virtio-blk
-#  
+#
 qemu-args := " -serial stdio" + " -m " + mem + " -drive " + drive + " -no-reboot -d cpu_reset -s" + " -device " + virtio-net + " -netdev " + dev + " -object " + pcap + " -device " + virtio-blk
 
 limine := "extern/limine/build/bin"
@@ -95,7 +95,7 @@ debugfs name=img:
     #!/usr/bin/env sh
     set -e
     path="build/{{name}}"
-    
+
     sudo losetup -Pf --show $path >loopback_dev
     sudo debugfs $(cat loopback_dev)p1
     sudo losetup -d $(cat loopback_dev)
@@ -120,3 +120,6 @@ kvm init="init" release="debug": (build init release) (image img)
 
 run_file file release="debug": (build_kern file release) (image img)
   qemu-system-{{qemutarget}} -cpu Haswell {{qemu-args}}
+
+qemu init="init" release="debug": (image img)
+    qemu-system-{{qemutarget}} -cpu Haswell {{qemu-args}}

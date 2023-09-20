@@ -1,9 +1,7 @@
 #![no_std]
 #![no_main]
 #![feature(never_type)]
-#![feature(box_syntax)]
-#![feature(default_alloc_error_handler)]
-#![feature(const_btree_new)]
+#![feature(const_btree_len)]
 
 #[macro_use]
 extern crate alloc;
