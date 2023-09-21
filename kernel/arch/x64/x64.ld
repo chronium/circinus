@@ -55,7 +55,7 @@ SECTIONS {
         __kernel_pdpt = . - VMA_OFFSET;
         . += 0x1000;
         __kernel_pd = . - VMA_OFFSET;
-        . += 4 * 512 * 8; /* (# of PDPT entries) * (# of entries in PD) *
+        . += 512 * 512 * 8; /* (# of PDPT entries) * (# of entries in PD) *
                              (size of entry) */
 
         /* The initial stack for BSP. We need reserve a large space since Rust

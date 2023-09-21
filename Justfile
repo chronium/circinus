@@ -1,6 +1,6 @@
 target := "x64"
 qemutarget := "x86_64"
-mem := "2G"
+mem := "8G"
 
 img := "os.img"
 drive := "if=none,id=dsk0,format=raw,file=build/" + img
@@ -106,20 +106,20 @@ limine:
     make
     popd
 
-run init="init" release="debug": (build init release) (image img)
+run init="init" release="release": (build init release) (image img)
     qemu-system-{{qemutarget}} -cpu Haswell {{qemu-args}}
 
-run_init init="init" release="debug": (build init release) (image img)
+run_init init="init" release="release": (build init release) (image img)
     qemu-system-{{qemutarget}} -cpu Haswell {{qemu-args}}
 
-run_gdb init="init" release="debug": (build init release) (image img)
+run_gdb init="init" release="release": (build init release) (image img)
     qemu-system-{{qemutarget}} -cpu Haswell {{qemu-args}} -S
 
-kvm init="init" release="debug": (build init release) (image img)
+kvm init="init" release="release": (build init release) (image img)
     sudo qemu-system-{{qemutarget}} -enable-kvm -cpu host {{qemu-args}}
 
-run_file file release="debug": (build_kern file release) (image img)
+run_file file release="release": (build_kern file release) (image img)
   qemu-system-{{qemutarget}} -cpu Haswell {{qemu-args}}
 
-qemu init="init" release="debug": (image img)
+qemu init="init" release="release": (image img)
     qemu-system-{{qemutarget}} -cpu Haswell {{qemu-args}}

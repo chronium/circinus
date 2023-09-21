@@ -220,6 +220,12 @@ impl<'a, T> IntoIterator for &'a mut CVec<T> {
 	}
 }
 
+impl<T> Default for CVec<T> {
+	fn default() -> Self {
+		Self::new()
+	}
+}
+
 impl Write for CVec<u8> {
 	fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
 		self.extend_from_slice(buf).map_err(|err| {

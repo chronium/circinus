@@ -1,4 +1,4 @@
-TARGET?=$(shell rustc -Z unstable-options --print target-list | grep llvm-target | cut -d '"' -f4)
+TARGET?=$(shell rustc -Z unstable-options --print target-spec-json | grep llvm-target | cut -d '"' -f4)
 
 CARGO?=cargo
 CARGO_TEST?=$(CARGO)
@@ -90,7 +90,7 @@ $(BUILD)/release/libc.a: $(BUILD)/release/libcilibc.a
 
 $(BUILD)/release/libc.so: $(BUILD)/release/libcilibc.a
 	$(CC) -nostdlib -shared -Wl,--allow-multiple-definition -Wl,--whole-archive $^ -Wl,--no-whole-archive -Wl,-soname,libc.so.6 -o $@
-	
+
 $(BUILD)/release/libcilibc.a: $(SRC)
 	CARGO_INCREMENTAL=0 $(CARGO) rustc --release $(CARGOFLAGS) -- --emit link=$@ $(RUSTFLAGS)
 

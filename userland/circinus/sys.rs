@@ -24,13 +24,14 @@ pub enum Syscall {
 	Stat = 3,
 	Open = 4,
 	Brk = 128,
+	#[allow(clippy::enum_clike_unportable_variant)]
 	Exit = -1isize as usize,
 }
 
 fn sys1(sys: Syscall, arg1: usize) -> usize {
 	let mut ret;
 	unsafe {
-		asm!("syscall", 
+		asm!("syscall",
     in("rdi") arg1,
     in("rax") sys as usize,
     lateout("rax")  ret);
@@ -41,7 +42,7 @@ fn sys1(sys: Syscall, arg1: usize) -> usize {
 fn sys2(sys: Syscall, arg1: usize, arg2: usize) -> usize {
 	let mut ret;
 	unsafe {
-		asm!("syscall", 
+		asm!("syscall",
     in("rdi") arg1,
     in("rsi") arg2,
     in("rax") sys as usize,
@@ -53,7 +54,7 @@ fn sys2(sys: Syscall, arg1: usize, arg2: usize) -> usize {
 fn sys3(sys: Syscall, arg1: usize, arg2: usize, arg3: usize) -> usize {
 	let mut ret;
 	unsafe {
-		asm!("syscall", 
+		asm!("syscall",
     in("rdi") arg1,
     in("rsi") arg2,
     in("rdx") arg3,
@@ -94,7 +95,7 @@ pub fn stat(path: &Path, buf: &mut Stat) -> usize {
 	)
 }
 
-pub fn read(fd: i32, buf: &mut [u8]) -> usize {
+pub fn read(fd: i32, buf: &[u8]) -> usize {
 	sys3(Syscall::Read, fd as usize, buf.as_ptr() as usize, buf.len())
 }
 

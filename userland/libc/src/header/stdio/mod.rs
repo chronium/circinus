@@ -186,14 +186,14 @@ pub unsafe extern "C" fn funlockfile(file: *mut FILE) {
 
 #[no_mangle]
 pub unsafe extern "C" fn puts(s: *const c_char) -> c_int {
-	let mut stream = (&mut *stdout).lock();
-	if let Err(_) = (*stream).try_set_byte_orientation_unlocked() {
+	let mut stream = (*stdout).lock();
+	if (*stream).try_set_byte_orientation_unlocked().is_err() {
 		return -1;
 	}
 
 	let buf = slice::from_raw_parts(s as *mut u8, strlen(s));
 
-	if stream.write_all(&buf).is_err() {
+	if stream.write_all(buf).is_err() {
 		return -1;
 	}
 	if stream.write(&[b'\n']).is_err() {
@@ -225,7 +225,7 @@ pub unsafe extern "C" fn fflush(stream: *mut FILE) -> c_int {
 #[no_mangle]
 pub unsafe extern "C" fn fgetc(stream: *mut FILE) -> c_int {
 	let mut stream = (*stream).lock();
-	if let Err(_) = (*stream).try_set_byte_orientation_unlocked() {
+	if (*stream).try_set_byte_orientation_unlocked().is_err() {
 		return EOF;
 	}
 
@@ -245,7 +245,7 @@ pub unsafe extern "C" fn getchar() -> c_int {
 
 #[no_mangle]
 pub unsafe extern "C" fn getc_unlocked(stream: *mut FILE) -> c_int {
-	if let Err(_) = (*stream).try_set_byte_orientation_unlocked() {
+	if (*stream).try_set_byte_orientation_unlocked().is_err() {
 		return -1;
 	}
 
@@ -263,7 +263,7 @@ impl<'a> Deref for LockGuard<'a> {
 	type Target = FILE;
 
 	fn deref(&self) -> &Self::Target {
-		&self.0
+		self.0
 	}
 }
 
@@ -284,7 +284,7 @@ impl<'a> Drop for LockGuard<'a> {
 #[no_mangle]
 pub unsafe extern "C" fn vfprintf(file: *mut FILE, format: *const c_char, ap: va_list) -> c_int {
 	let mut file = (*file).lock();
-	if let Err(_) = file.try_set_byte_orientation_unlocked() {
+	if file.try_set_byte_orientation_unlocked().is_err() {
 		return -1;
 	}
 
@@ -349,6 +349,6 @@ pub unsafe fn flush_io_streams() {
 		let stream = &mut *stream;
 		stream.flush()
 	};
-	flush(stdout);
-	flush(stderr);
+	let _ = flush(stdout);
+	let _ = flush(stderr);
 }
