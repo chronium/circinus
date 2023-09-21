@@ -28,7 +28,7 @@ pub fn write(fd: i32, buf: &[u8]) -> usize {
 	)
 }
 
-pub fn read(fd: i32, buf: &mut [u8]) -> usize {
+pub fn read(fd: i32, buf: &[u8]) -> usize {
 	sys3(Syscall::Read, fd as usize, buf.as_ptr() as usize, buf.len())
 }
 

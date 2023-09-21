@@ -7,6 +7,7 @@ pub(crate) enum Syscall {
 	Stat = 3,
 	Open = 4,
 	Brk = 128,
+	#[allow(clippy::enum_clike_unportable_variant)]
 	Exit = -1isize as usize,
 }
 

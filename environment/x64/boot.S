@@ -131,7 +131,7 @@ construct_page_table:
     // PDPT
     lea edi, [__kernel_pdpt]
     lea eax, [__kernel_pd + 0x103] // Present, writable, global.
-    mov ecx, 4 // (# of PDPT entries)
+    mov ecx, 512 // (# of PDPT entries)
 
 write_pdpt_entry:
     mov dword ptr [edi], eax
@@ -143,7 +143,7 @@ write_pdpt_entry:
     // Page Directory
     lea edi, [__kernel_pd]
     mov eax, 0x0000183 // Present, writable, global, page size is 2MB.
-    mov ecx, 4 * 512 // (# of PDPT entries) * (# of entries in PD)
+    mov ecx, 512 * 512 // (# of PDPT entries) * (# of entries in PD)
 
 write_pd_entry:
     mov dword ptr [edi], eax

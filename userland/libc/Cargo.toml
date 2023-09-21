@@ -4,22 +4,28 @@ version = "0.1.0"
 edition = "2021"
 
 [workspace]
-members = [ "src/crt0", "src/crti", "src/crtn" ]
-excluide = [ "core_io" ]
+members = ["src/crt0", "src/crti", "src/crtn"]
+exclude = ["core_io"]
 
 [lib]
 name = "cilibc"
 crate-type = ["staticlib"]
 
 [build-dependencies]
-cbindgen = "0.24.3"
+cbindgen = "0.26.0"
 cc = "1.0.73"
 
 [dependencies]
 cbitset = "0.2.0"
 core_io = { path = "core_io", features = ["collections"] }
-lazy_static = { version = "1.4.0", default-features = false, features = ["spin_no_std"] }
-spin = { version = "0.9.4", default-features = false, features = [ "lock_api", "mutex", "spin_mutex" ]}
+lazy_static = { version = "1.4.0", default-features = false, features = [
+    "spin_no_std",
+] }
+spin = { version = "0.9.4", default-features = false, features = [
+    "lock_api",
+    "mutex",
+    "spin_mutex",
+] }
 
 syscall = { path = "../syscall" }
 

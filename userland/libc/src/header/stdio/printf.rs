@@ -329,7 +329,7 @@ impl Iterator for PrintfIter {
 			}
 
 			if len > 0 {
-				let slice = slice::from_raw_parts(self.format as *const u8, len);
+				let slice = slice::from_raw_parts(self.format, len);
 				self.format = self.format.add(len);
 				return Some(Ok(PrintfFmt::Plain(slice)));
 			}

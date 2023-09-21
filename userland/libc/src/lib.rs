@@ -3,9 +3,8 @@
 #![allow(non_upper_case_globals)]
 #![allow(dead_code)]
 #![feature(linkage)]
-#![feature(lang_items)]
 #![feature(allocator_api)]
-#![feature(default_alloc_error_handler)]
+#![feature(alloc_error_handler)]
 #![feature(c_variadic)]
 #![feature(alloc_layout_extra)]
 
@@ -35,7 +34,7 @@ pub extern "C" fn cilibc_panic(pi: &::core::panic::PanicInfo) -> ! {
 }
 
 #[cfg(not(test))]
-#[lang = "oom"]
+#[alloc_error_handler]
 #[linkage = "weak"]
 #[no_mangle]
 pub extern "C" fn rust_oom(layout: ::core::alloc::Layout) -> ! {
