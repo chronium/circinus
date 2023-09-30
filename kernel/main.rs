@@ -12,12 +12,14 @@ extern crate environment;
 use alloc::{boxed::Box, sync::Arc, vec::Vec};
 use api::{
 	driver::block::BlockDriver,
+	io::OpenOptions,
 	kernel::KernelOps,
 	schema::{
 		fs::{Partition, PARTITIONS},
 		unix::Path,
 	},
 	sync::SpinLock,
+	user_buffer::UserBufferMut,
 	vfs::mount::Rootfs,
 };
 use environment::{
@@ -155,11 +157,17 @@ pub fn boot_kernel(#[cfg_attr(debug_assertions, allow(unused))] bootinfo: &BootI
 
 	rootfs.mount(ext2, PARTITIONS.lock().get(&0).unwrap().clone());
 
-	println!("{:?}", rootfs.lookup("/Mounts/ext2/test.txt"));
-	println!(
-		"{:?}",
-		rootfs.lookup("/Mounts/ext2/test.txt").unwrap().stat()
-	);
+	let test_node = rootfs.lookup("/Mounts/ext2/test.txt").unwrap();
+
+	&test_node.as_file().unwrap().open(&OpenOptions::readwrite());
+
+	let mut buf = vec![0; 512];
+
+	dbg!(&test_node.as_file().unwrap().read(
+		0,
+		UserBufferMut::from(buf.as_mut_slice()),
+		&OpenOptions::readwrite()
+	));
 
 	let devcon = rootfs
 		.lookup_path(Path::new("/Devices/devcon"), true)
@@ -175,8 +183,14 @@ pub fn boot_kernel(#[cfg_attr(debug_assertions, allow(unused))] bootinfo: &BootI
 	process::init();
 
 	info!("running /{}", env!("INIT_FILE"));
-	Process::new_init_process(INITIAL_ROOT_FS.clone(), executable_path, devcon, &[b"/csh"])
-		.expect("failed to execute init");
+	let init = env!("INIT_FILE");
+	Process::new_init_process(
+		INITIAL_ROOT_FS.clone(),
+		executable_path,
+		devcon,
+		&[b"/{init}"],
+	)
+	.expect("failed to execute init");
 
 	switch();
 

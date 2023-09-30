@@ -5,6 +5,20 @@ use cbitset::BitSet256;
 use crate::platform::types::*;
 
 #[no_mangle]
+pub unsafe extern "C" fn memchr(
+	haystack: *const c_void,
+	needle: c_int,
+	len: size_t,
+) -> *mut c_void {
+	let haystack = core::slice::from_raw_parts(haystack as *const u8, len);
+
+	match memchr::memchr(needle as u8, haystack) {
+		Some(index) => haystack[index..].as_ptr() as *mut c_void,
+		None => ptr::null_mut(),
+	}
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn strlen(s: *const c_char) -> size_t {
 	strnlen(s, usize::MAX)
 }

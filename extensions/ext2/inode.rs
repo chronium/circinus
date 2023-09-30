@@ -29,6 +29,37 @@ impl BlockPointers {
 	pub fn count(&self) -> usize {
 		self.0.iter().filter(|&&b| *b != 0).count()
 	}
+
+	pub fn iter(&self) -> BlockPointersIterator {
+		BlockPointersIterator {
+			pointers: self,
+			index: 0,
+		}
+	}
+}
+
+pub struct BlockPointersIterator<'a> {
+	pointers: &'a BlockPointers,
+	index: usize,
+}
+
+impl<'a> Iterator for BlockPointersIterator<'a> {
+	type Item = &'a BlockPointer;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		if self.index >= self.pointers.0.len() {
+			return None;
+		}
+
+		let pointer = &self.pointers.0[self.index];
+		self.index += 1;
+
+		if *pointer == BlockPointer(0) {
+			return None;
+		}
+
+		Some(pointer)
+	}
 }
 
 bitflags! {
@@ -100,9 +131,9 @@ pub struct Inode {
 	flags: Flags,
 	_osval1: [u8; 4],
 	pub direct_pointers: BlockPointers,
-	singly_pointer: BlockPointer,
-	doubly_pointer: BlockPointer,
-	triply_pointer: BlockPointer,
+	pub singly_pointer: BlockPointer,
+	pub doubly_pointer: BlockPointer,
+	pub triply_pointer: BlockPointer,
 	gen_number: u32,
 	extended_attrib_block: BlockPointer,
 	pub extended_dir_block: BlockPointer,

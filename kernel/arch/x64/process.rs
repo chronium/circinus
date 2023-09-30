@@ -1,12 +1,13 @@
 use core::cell::UnsafeCell;
 
+use api::Result;
 use crossbeam::atomic::AtomicCell;
 use environment::{
 	address::{UserVAddr, VAddr},
 	arch::{
 		cpu_local_head,
 		x64::{USER_CS64, USER_DS, USER_RPL},
-		PAGE_SIZE, TSS,
+		PtRegs, PAGE_SIZE, TSS,
 	},
 	page_allocator::{alloc_pages_owned, AllocPageFlags, OwnedPages},
 };
@@ -166,6 +167,17 @@ impl Process {
 			interrupt_stack,
 			syscall_stack,
 		}
+	}
+
+	pub fn setup_execve_stack(
+		&self,
+		frame: &mut PtRegs,
+		ip: UserVAddr,
+		user_sp: UserVAddr,
+	) -> Result<()> {
+		frame.rip = ip.as_isize() as u64;
+		frame.rsp = user_sp.as_isize() as u64;
+		Ok(())
 	}
 }
 

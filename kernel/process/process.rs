@@ -26,7 +26,7 @@ use api::{
 };
 use environment::{
 	address::{UserVAddr, VAddr},
-	arch::PAGE_SIZE,
+	arch::{PtRegs, PAGE_SIZE},
 	page_allocator::{alloc_pages, AllocPageFlags},
 	spinlock::SpinLock,
 };
@@ -276,6 +276,30 @@ impl Process {
 		}
 
 		SCHEDULER.lock().enqueue(self.pid);
+	}
+
+	pub fn execve(
+		frame: &mut PtRegs,
+		executable_path: Arc<PathComponent>,
+		argv: &[&[u8]],
+		envp: &[&[u8]],
+	) -> Result<()> {
+		let current = current_process();
+		current.opened_files().lock().close_cloexec_files();
+		// TODO: cmdline
+
+		let entry = setup_userspace(executable_path, argv, envp, &current.rootfs)?;
+
+		// TODO: Signal?
+
+		entry.vm.page_table().switch();
+		*current.vm.borrow_mut() = Some(Arc::new(SpinLock::new(entry.vm)));
+
+		current
+			.arch
+			.setup_execve_stack(frame, entry.ip, entry.user_sp)?;
+
+		Ok(())
 	}
 
 	pub fn process_group(&self) -> Arc<SpinLock<ProcessGroup>> {

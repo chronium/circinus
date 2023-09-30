@@ -163,6 +163,20 @@ impl OpenedFileTable {
 		})
 	}
 
+	pub fn close_cloexec_files(&mut self) {
+		for slot in &mut self.files {
+			if matches!(
+				slot,
+				Some(LocalOpenedFile {
+					close_on_exec: true,
+					..
+				})
+			) {
+				*slot = None;
+			}
+		}
+	}
+
 	fn alloc_fd(&mut self, gte: Option<i32>) -> Result<Fd> {
 		let (mut i, gte) = match gte {
 			Some(gte) => (gte, gte),

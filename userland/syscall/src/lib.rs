@@ -2,6 +2,8 @@
 #![feature(linkage)]
 #![allow(non_camel_case_types)]
 
+use core::ffi::c_char;
+
 use syscall::{sys1, sys3, Syscall};
 
 pub mod syscall;
@@ -26,6 +28,10 @@ pub fn write(fd: i32, buf: &[u8]) -> usize {
 		buf.as_ptr() as usize,
 		buf.len(),
 	)
+}
+
+pub fn execve(path: *const c_char, argv: *const *mut c_char, envp: *const *mut c_char) -> usize {
+	sys3(Syscall::Execve, path as usize, argv as usize, envp as usize)
 }
 
 pub fn read(fd: i32, buf: &[u8]) -> usize {

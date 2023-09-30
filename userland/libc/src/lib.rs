@@ -7,6 +7,7 @@
 #![feature(alloc_error_handler)]
 #![feature(c_variadic)]
 #![feature(alloc_layout_extra)]
+#![feature(lang_items)]
 
 use crate::platform::sys::Sys;
 
@@ -16,6 +17,7 @@ extern crate alloc;
 #[macro_use]
 mod macros;
 mod allocator;
+pub mod c_str;
 pub mod c_vec;
 pub mod file;
 pub mod header;

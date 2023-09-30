@@ -1,13 +1,14 @@
 use core::arch::asm;
 
+#[allow(clippy::enum_clike_unportable_variant)]
 #[repr(usize)]
 pub(crate) enum Syscall {
 	Write = 1,
 	Read = 2,
 	Stat = 3,
 	Open = 4,
+	Execve = 5,
 	Brk = 128,
-	#[allow(clippy::enum_clike_unportable_variant)]
 	Exit = -1isize as usize,
 }
 

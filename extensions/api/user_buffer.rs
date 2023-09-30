@@ -211,6 +211,12 @@ impl<'a> UserBufWriter<'a> {
 		Ok(())
 	}
 
+	pub fn skip(&mut self, len: usize) -> Result<()> {
+		self.check_remaining_len(len)?;
+		self.pos += len;
+		Ok(())
+	}
+
 	pub fn fill(&mut self, value: u8, len: usize) -> Result<()> {
 		self.check_remaining_len(len)?;
 
