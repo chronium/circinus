@@ -1,6 +1,6 @@
 target := "x64"
 qemutarget := "x86_64"
-mem := "8G"
+mem := "2G"
 
 img := "os.img"
 drive := "if=none,id=dsk0,format=raw,file=build/" + img
@@ -76,6 +76,7 @@ image name:
     sudo cp -Rf build/kernel.sym isotmp/boot
     sudo cp -Rf {{limine}}/limine.sys isotmp/boot
     sudo cp -Rf root/* isotmp/
+    sudo cp -Rf userland/build isotmp/bin
     sync
     sudo umount isotmp/
     sudo losetup -d $(cat loopback_dev)

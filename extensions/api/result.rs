@@ -83,7 +83,7 @@ impl Error {
 	}
 
 	pub fn errno(&self) -> usize {
-		todo!()
+		self.kind as usize
 	}
 }
 

@@ -26,6 +26,7 @@ spin = { version = "0.9.4", default-features = false, features = [
     "mutex",
     "spin_mutex",
 ] }
+memchr = { version = "2.6.3", default-features = false }
 
 syscall = { path = "../syscall" }
 

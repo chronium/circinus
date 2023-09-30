@@ -1,3 +1,5 @@
+use crate::c_str::CStr;
+
 use super::types::*;
 
 pub struct Sys;
@@ -13,5 +15,9 @@ impl Sys {
 
 	pub fn exit(status: c_int) -> ! {
 		syscall::exit(status)
+	}
+
+	pub unsafe fn execve(path: &CStr, argv: *const *mut c_char, envp: *const *mut c_char) -> c_int {
+		syscall::execve(path.as_ptr(), argv, envp) as c_int
 	}
 }

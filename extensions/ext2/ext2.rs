@@ -2,10 +2,14 @@ use core::{fmt, sync::atomic::AtomicUsize};
 
 use alloc::{sync::Arc, vec::Vec};
 use api::{
+	dbg,
+	driver::block,
 	info,
 	owo_colors::OwoColorize,
 	schema::fs,
 	sync::SpinLock,
+	trace,
+	user_buffer::UserBufWriter,
 	vfs::{self, NodeId},
 };
 use utils::{alignment::align_up, bytes_parser::BytesParser, once::Once};
@@ -27,6 +31,7 @@ pub struct Ext2 {
 	dirent_has_type: bool,
 	pub large_file_size: bool,
 	next_fid: Arc<AtomicUsize>,
+	open_nodes: Arc<SpinLock<Vec<NodeId>>>,
 }
 
 impl fmt::Debug for Ext2 {
@@ -45,7 +50,7 @@ impl fmt::Debug for Ext2 {
 #[derive(Debug)]
 struct DriveInode {
 	id: NodeId,
-	inode: Inode,
+	inode: Arc<Inode>,
 	ext2: Arc<Ext2>,
 }
 
@@ -61,14 +66,14 @@ impl vfs::Directory for DriveInode {
 					crate::dirent::DirentType::Unknown => todo!(),
 					crate::dirent::DirentType::Regular => {
 						return Ok(vfs::Node::File(Arc::new(DriveInode {
-							inode: self.ext2.read_inode(inode.inode as usize),
+							inode: Arc::new(self.ext2.read_inode(inode.inode as usize)),
 							ext2: self.ext2.clone(),
 							id: NodeId::new(inode.inode as usize),
 						})));
 					}
 					crate::dirent::DirentType::Directory => {
 						return Ok(vfs::Node::Directory(Arc::new(DriveInode {
-							inode: self.ext2.read_inode(inode.inode as usize),
+							inode: Arc::new(self.ext2.read_inode(inode.inode as usize)),
 							ext2: self.ext2.clone(),
 							id: NodeId::new(inode.inode as usize),
 						})));
@@ -96,7 +101,13 @@ impl vfs::Directory for DriveInode {
 
 impl vfs::File for DriveInode {
 	fn open(&self, options: &api::io::OpenOptions) -> api::Result<Option<Arc<dyn vfs::File>>> {
-		todo!()
+		// TODO: OpenOptions
+		self.ext2.open_nodes.lock().push(self.id);
+		Ok(Some(Arc::new(DriveInode {
+			id: self.id,
+			inode: self.inode.clone(),
+			ext2: self.ext2.clone(),
+		})))
 	}
 
 	fn read(
@@ -105,7 +116,19 @@ impl vfs::File for DriveInode {
 		dst: api::user_buffer::UserBufferMut<'_>,
 		options: &api::io::OpenOptions,
 	) -> api::Result<usize> {
-		todo!()
+		// TODO: Get rid of double read. Read directly into user buffer
+		let mut buf = vec![0u8; align_up(self.inode.lower_size as usize, self.ext2.block_size)];
+		let blocks = self.ext2.gather_blocks(&self.inode);
+		trace!("{:?}", blocks);
+		self.ext2.read_blocks(&blocks, &mut buf);
+
+		let write_len = (self.inode.lower_size as usize).min(buf.len()) - offset;
+		let mut writer = api::user_buffer::UserBufWriter::from(dst);
+		writer
+			.write_bytes(&buf[offset..write_len])
+			.map_err(|_| api::ErrorKind::BufferError);
+
+		Ok(writer.written_len())
 	}
 
 	fn write(
@@ -138,6 +161,7 @@ impl Clone for Ext2 {
 			dirent_has_type: self.dirent_has_type.clone(),
 			large_file_size: self.large_file_size.clone(),
 			next_fid: self.next_fid.clone(),
+			open_nodes: self.open_nodes.clone(),
 		}
 	}
 }
@@ -183,6 +207,7 @@ impl Ext2 {
 			dirent_has_type,
 			large_file_size,
 			next_fid: Arc::new(AtomicUsize::new(0)),
+			open_nodes: Arc::new(SpinLock::new(vec![])),
 		}
 	}
 
@@ -282,12 +307,99 @@ impl Ext2 {
 		res
 	}
 
+	pub fn read_blocks(&self, blocks: &[BlockPointer], buf: &mut [u8]) {
+		let mut offset = 0;
+		for block in blocks {
+			self.read_block(*block, &mut buf[offset..offset + self.block_size]);
+			offset += self.block_size;
+		}
+	}
+
+	pub fn gather_blocks(&self, inode: &Inode) -> Vec<BlockPointer> {
+		let mut res = vec![];
+
+		res.extend(inode.direct_pointers.iter());
+		res.extend(self.gather_singly(inode));
+
+		for doubly in self.gather_doubly(inode) {
+			res.extend(self.gather_singly(&self.read_inode(doubly.0 as usize)));
+		}
+
+		for triply in self.gather_triply(inode) {
+			for doubly in self.gather_doubly(&self.read_inode(triply.0 as usize)) {
+				res.extend(self.gather_singly(&self.read_inode(doubly.0 as usize)));
+			}
+		}
+
+		res
+	}
+
+	pub fn gather_singly(&self, inode: &Inode) -> Vec<BlockPointer> {
+		let mut res = vec![];
+
+		if inode.singly_pointer.0 != 0 {
+			let mut buf = self.read_block_alloc(inode.singly_pointer);
+			let mut parser = BytesParser::new(&mut buf);
+
+			loop {
+				let block = parser.consume_le_u32().unwrap();
+				if block == 0 {
+					break;
+				}
+
+				res.push(BlockPointer(block));
+			}
+		}
+
+		res
+	}
+
+	pub fn gather_doubly(&self, inode: &Inode) -> Vec<BlockPointer> {
+		let mut res = vec![];
+
+		if inode.doubly_pointer.0 != 0 {
+			let mut buf = self.read_block_alloc(inode.doubly_pointer);
+			let mut parser = BytesParser::new(&mut buf);
+
+			loop {
+				let block = parser.consume_le_u32().unwrap();
+				if block == 0 {
+					break;
+				}
+
+				res.push(BlockPointer(block));
+			}
+		}
+
+		res
+	}
+
+	pub fn gather_triply(&self, inode: &Inode) -> Vec<BlockPointer> {
+		let mut res = vec![];
+
+		if inode.triply_pointer.0 != 0 {
+			let mut buf = self.read_block_alloc(inode.triply_pointer);
+			let mut parser = BytesParser::new(&mut buf);
+
+			loop {
+				let block = parser.consume_le_u32().unwrap();
+				if block == 0 {
+					break;
+				}
+
+				res.push(BlockPointer(block));
+			}
+		}
+
+		res
+	}
+
 	pub fn root(ext2: Arc<Ext2>) -> Arc<dyn vfs::Directory> {
 		let inode = ext2.read_inode(2);
 		Arc::new(DriveInode {
 			ext2: ext2.clone(),
 			id: NodeId::new(2),
-			inode,
+			inode: Arc::new(inode),
 		})
 	}
 }

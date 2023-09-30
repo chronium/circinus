@@ -3,6 +3,8 @@ use core::{
 	fmt, ptr,
 };
 
+use alloc::vec::Vec;
+
 use self::{sys::Sys, types::*};
 
 use crate::{
@@ -14,6 +16,12 @@ pub mod types;
 
 #[path = "circinus/mod.rs"]
 pub(crate) mod sys;
+
+#[allow(non_camel_case_types)]
+#[no_mangle]
+pub static mut environ: *mut *mut c_char = ptr::null_mut();
+
+pub static mut OUR_ENVIRON: Vec<*mut c_char> = Vec::new();
 
 pub unsafe fn alloc(size: usize) -> *mut c_void {
 	let layout = Layout::new::<c_void>().repeat(size).unwrap();
