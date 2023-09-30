@@ -15,5 +15,6 @@ virtio-net.pcap
 **/sysroot/**
 
 *.o
+**/*.o
 
 **/build/**
