@@ -1,6 +1,10 @@
 use core::{ffi::VaList, ops::Range, slice};
 
-use alloc::{collections::BTreeMap, string::String, vec::Vec};
+use alloc::{
+	collections::BTreeMap,
+	string::{String, ToString},
+	vec::Vec,
+};
 
 use crate::{
 	io::{self, Write},
@@ -529,6 +533,54 @@ unsafe fn inner_printf<W: Write>(w: W, format: *const c_char, mut ap: VaList) ->
 		});
 
 		match fmtkind {
+			FmtKind::Signed => {
+				let string = match varargs.get(index, &mut ap, Some((arg.fmtkind, arg.intkind))) {
+					VaArg::c_char(i) => i.to_string(),
+					VaArg::c_double(i) => panic!("this should not be possible"),
+					VaArg::c_int(i) => i.to_string(),
+					VaArg::c_long(i) => i.to_string(),
+					VaArg::c_longlong(i) => i.to_string(),
+					VaArg::c_short(i) => i.to_string(),
+					VaArg::intmax_t(i) => i.to_string(),
+					VaArg::pointer(i) => (i as usize).to_string(),
+					VaArg::ptrdiff_t(i) => i.to_string(),
+					VaArg::ssize_t(i) => i.to_string(),
+					VaArg::wint_t(_) => unreachable!("this should not be possible"),
+				};
+				let positive = !string.starts_with('-');
+				let zero = precision == Some(0) && string == "0";
+
+				let mut len = string.len();
+				let mut final_len = string.len().max(precision.unwrap_or(0));
+				if positive && (sign_reserve || sign_always) {
+					final_len += 1;
+				}
+				if zero {
+					len = 0;
+					final_len = 0;
+				}
+
+				pad(w, !left, b' ', final_len..pad_space)?;
+
+				let bytes = if positive {
+					if sign_reserve {
+						w.write_all(&[b' '])?;
+					} else if sign_always {
+						w.write_all(&[b'+'])?;
+					}
+					string.as_bytes()
+				} else {
+					w.write_all(&[b'-'])?;
+					&string.as_bytes()[1..]
+				};
+				pad(w, true, b'0', len..precision.unwrap_or(pad_zero))?;
+
+				if !zero {
+					w.write_all(bytes)?;
+				}
+
+				pad(w, left, b' ', final_len..pad_space)?;
+			}
 			FmtKind::String => {
 				let ptr = match varargs.get(index, &mut ap, Some((FmtKind::String, IntKind::Int))) {
 					VaArg::pointer(p) => p,

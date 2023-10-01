@@ -5,8 +5,10 @@ use api::{
 		posix::{FileMode, O_RDWR, O_WRONLY},
 		unix::Path,
 	},
-	ErrorKind, Process,
+	ErrorKind, Process, ProcessOps,
 };
+
+use crate::process::current_process;
 
 use super::SyscallHandler;
 
@@ -17,7 +19,12 @@ impl<'a> SyscallHandler<'a> {
 		flags: OpenFlags,
 		mode: FileMode,
 	) -> api::Result<isize> {
-		trace!("[{}] open(\"{}\")", Process::pid().as_i32(), path.as_str());
+		trace!(
+			"[{}:{}] open(\"{}\")",
+			api::Process::pid().as_i32(),
+			api::Process::argv0(),
+			path.as_str()
+		);
 
 		if flags.contains(OpenFlags::O_CREAT) {
 			unimplemented!()

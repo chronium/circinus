@@ -1,6 +1,6 @@
 export CC?=x86_64-elf-gcc
 
-export TARGET=x86_64-unknown-circinus
+export TARGET?=x86_64-unknown-circinus
 
 CFLAGS?=\
 	-std=c11 \
@@ -12,13 +12,13 @@ CFLAGS?=\
 	-static \
 	-nostdinc \
 	-nostdlib \
-	-isystem ../libc/sysroot/include
+	-isystem ../sysroot/include
 
 LDFLAGS?=\
-	../libc/sysroot/lib/crt0.o \
-	../libc/sysroot/lib/crti.o \
-	../libc/sysroot/lib/crtn.o \
-	../libc/sysroot/lib/libc.a
+	../sysroot/lib/crt0.o \
+	../sysroot/lib/crti.o \
+	../sysroot/lib/crtn.o \
+	../sysroot/lib/libc.a
 
 FILES=\
 	main.o
@@ -41,12 +41,7 @@ install: $(BIN)
 	mkdir -p "$(DESTDIR)"
 	cp $(BUILD)/sh $(DESTDIR)/
 
-libc/sysroot:
-	$(MAKE) -C ../libc sysroot
-
-DEPS=libc/sysroot
-
-$(BUILD)/%.o: %.c $(DEPS)
+$(BUILD)/%.o: %.c
 	mkdir -p "$$(dirname "$@")"
 	$(CC) "$<" -o "$@" $(CFLAGS) -c
 

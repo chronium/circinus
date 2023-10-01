@@ -3,6 +3,7 @@ use alloc::{
 	sync::{Arc, Weak},
 };
 use core::{
+	borrow::BorrowMut,
 	cmp::max,
 	mem::size_of,
 	sync::atomic::{AtomicI32, Ordering},
@@ -13,6 +14,7 @@ use crossbeam::atomic::AtomicCell;
 use goblin::elf64::program_header::{ProgramHeader, PT_LOAD};
 
 use api::{
+	cmdline::Cmdline,
 	ctypes::c_int,
 	io::{OpenFlags, OpenOptions},
 	process::{PgId, Pid, ProcessState},
@@ -38,14 +40,14 @@ use crate::{
 	mm::vm::{Vm, VmAreaType},
 	process::{
 		current_process,
-		init_stack::{estimate_user_init_stack_size, init_user_stack},
-		switch,
+		elf::Elf,
+		init_stack::{estimate_user_init_stack_size, init_user_stack, Auxv},
+		process_group::ProcessGroup,
+		switch, SCHEDULER,
 	},
 	random::read_secure_random,
 	INITIAL_ROOT_FS,
 };
-
-use super::{elf::Elf, init_stack::Auxv, process_group::ProcessGroup, SCHEDULER};
 
 type ProcessTable = BTreeMap<Pid, Arc<Process>>;
 
@@ -78,6 +80,7 @@ pub struct Process {
 	process_group: AtomicRefCell<Weak<SpinLock<ProcessGroup>>>,
 	pid: Pid,
 	state: AtomicCell<ProcessState>,
+	cmdline: AtomicRefCell<Cmdline>,
 	vm: AtomicRefCell<Option<Arc<SpinLock<Vm>>>>,
 	rootfs: Arc<SpinLock<Rootfs>>,
 	opened_files: Arc<SpinLock<OpenedFileTable>>,
@@ -92,6 +95,7 @@ impl Process {
 			process_group: AtomicRefCell::new(Arc::downgrade(&process_group)),
 			pid: Pid::new(0),
 			state: AtomicCell::new(ProcessState::Runnable),
+			cmdline: AtomicRefCell::new(Cmdline::new()),
 			vm: AtomicRefCell::new(None),
 			rootfs: INITIAL_ROOT_FS.clone(),
 			opened_files: Arc::new(SpinLock::new(OpenedFileTable::new())),
@@ -115,6 +119,7 @@ impl Process {
 			process_group: AtomicRefCell::new(Arc::downgrade(&process_group)),
 			pid,
 			state: AtomicCell::new(ProcessState::Runnable),
+			cmdline: AtomicRefCell::new(Cmdline::new()),
 			vm: AtomicRefCell::new(None),
 			rootfs: INITIAL_ROOT_FS.clone(),
 			opened_files: Arc::new(SpinLock::new(OpenedFileTable::new())),
@@ -171,6 +176,7 @@ impl Process {
 			process_group: AtomicRefCell::new(Arc::downgrade(&process_group)),
 			pid,
 			state: AtomicCell::new(ProcessState::Runnable),
+			cmdline: AtomicRefCell::new(Cmdline::from_argv(argv)),
 			vm: AtomicRefCell::new(Some(Arc::new(SpinLock::new(entry.vm)))),
 			rootfs,
 			opened_files: Arc::new(SpinLock::new(opened_files)),
@@ -190,6 +196,10 @@ impl Process {
 
 	pub fn state(&self) -> ProcessState {
 		self.state.load()
+	}
+
+	pub fn cmdline(&self) -> AtomicRef<'_, Cmdline> {
+		self.cmdline.borrow()
 	}
 
 	pub fn arch(&self) -> &arch::Process {
@@ -286,7 +296,7 @@ impl Process {
 	) -> Result<()> {
 		let current = current_process();
 		current.opened_files().lock().close_cloexec_files();
-		// TODO: cmdline
+		current.cmdline.borrow_mut().set_by_argv(argv);
 
 		let entry = setup_userspace(executable_path, argv, envp, &current.rootfs)?;
 
@@ -314,10 +324,9 @@ impl Process {
 impl Drop for Process {
 	fn drop(&mut self) {
 		trace!(
-			//"dropping {:?} (cmdline={})",
-			"dropping {:?}",
+			"dropping {:?} (cmdline={})",
 			self.pid(),
-			// self.cmdline().as_str()
+			self.cmdline().as_str()
 		);
 		// Since the process's reference count has already reached to zero
 		// (that's why the process is being dropped),
@@ -361,6 +370,10 @@ impl ProcessOps for Process {
 
 	fn opened_files(&self) -> Arc<SpinLock<OpenedFileTable>> {
 		self._opened_files().clone()
+	}
+
+	fn cmdline(&self) -> AtomicRef<'_, Cmdline> {
+		self.cmdline()
 	}
 }
 

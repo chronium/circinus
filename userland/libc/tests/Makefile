@@ -1,7 +1,11 @@
+export TARGET:=x86_64-unknown-circinus
+
 EXECS:=\
 	hello
 
 BINS=$(patsubst %,bins_static/%,$(EXECS))
+
+DESTDIR:=$(shell pwd)/../../build
 
 CFLAGS?=\
 	-std=c11 \
@@ -27,11 +31,13 @@ all: $(BINS)
 clean:
 	rm -rf bins_* gen *.out
 
-../sysroot:
+DEPS:
 	$(MAKE) -C .. sysroot
 
-DEPS=../sysroot
-
-bins_static/%: %.c $(DEPS)
+bins_static/%: %.c DEPS
 	mkdir -p "$$(dirname "$@")"
 	$(CC) "$<" -o "$@" $(CFLAGS)
+
+install: $(BINS)
+	mkdir -p "$(DESTDIR)"
+	cp $(BINS) "$(DESTDIR)"

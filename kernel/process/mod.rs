@@ -24,8 +24,7 @@ pub fn current_process() -> &'static Arc<Process> {
 
 pub fn init() {
 	SCHEDULER.init(|| SpinLock::new(Scheduler::new()));
-	let idle_thread =
-		Process::new_idle_thread().expect("Could not create idle thread");
+	let idle_thread = Process::new_idle_thread().expect("Could not create idle thread");
 	IDLE_THREAD.as_mut().set(idle_thread.clone());
 	CURRENT.as_mut().set(idle_thread);
 }

@@ -9,19 +9,19 @@ name = "api"
 path = "lib.rs"
 
 [dependencies]
-x86 = "0.49.0"
-log = "0.4.17"
-bitflags = "1.3.2"
-memoffset = "0.6.5"
-owo-colors = "3.4.0"
-atomic_refcell = "0.1.8"
+x86 = "0.52.0"
+log = "0.4.20"
+bitflags = "2.4.0"
+memoffset = "0.9.0"
+owo-colors = "3.5.0"
+atomic_refcell = "0.1.11"
 
-arrayvec = { version = "0.7.2", default-features = false }
-hashbrown = { version = "0.12.1", features = ["nightly"] }
-itertools = { version = "0.10.3", default-features = false, features = [
+arrayvec = { version = "0.7.4", default-features = false }
+hashbrown = { version = "0.14.1", features = ["nightly"] }
+itertools = { version = "0.11.0", default-features = false, features = [
   "use_alloc",
 ] }
-crossbeam = { version = "0.8.1", default-features = false, features = [
+crossbeam = { version = "0.8.2", default-features = false, features = [
   "alloc",
 ] }
 

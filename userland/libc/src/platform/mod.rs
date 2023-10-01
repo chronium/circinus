@@ -17,6 +17,15 @@ pub mod types;
 #[path = "circinus/mod.rs"]
 pub(crate) mod sys;
 
+#[allow(non_upper_case_globals)]
+pub static mut argv: *mut *mut c_char = ptr::null_mut();
+#[allow(non_upper_case_globals)]
+pub static mut inner_argv: Vec<*mut c_char> = Vec::new();
+#[allow(non_upper_case_globals)]
+pub static mut program_invocation_name: *mut c_char = ptr::null_mut();
+#[allow(non_upper_case_globals)]
+pub static mut program_invocation_short_name: *mut c_char = ptr::null_mut();
+
 #[allow(non_camel_case_types)]
 #[no_mangle]
 pub static mut environ: *mut *mut c_char = ptr::null_mut();

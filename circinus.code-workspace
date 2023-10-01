@@ -13,5 +13,7 @@
 	"settings": {
 		"rust-analyzer.cargo.target": "/home/chronium/repos/circinus/kernel/arch/x64/x64.json",
 		"rust-analyzer.check.allTargets": false,
+		"editor.tabSize": 2,
+		"editor.insertSpaces": true,
 	}
 }

@@ -9,7 +9,11 @@ extern crate alloc;
 
 use core::mem::size_of;
 
-use alloc::sync::Arc;
+use alloc::{
+	string::{String, ToString},
+	sync::Arc,
+};
+use cmdline::Cmdline;
 use ctypes::c_int;
 use environment::spinlock::SpinLock;
 use kernel::kernel_ops;
@@ -92,6 +96,10 @@ impl Process {
 
 	pub fn pid() -> Pid {
 		proc!(kernel_ops()).pid()
+	}
+
+	pub fn argv0() -> String {
+		proc!(kernel_ops()).cmdline().argv0().to_string()
 	}
 }
 
@@ -254,6 +262,7 @@ macro_rules! dbg {
     };
 }
 
+pub mod cmdline;
 pub mod ctypes;
 pub mod driver;
 pub mod guid;

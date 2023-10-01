@@ -4,7 +4,7 @@ use alloc::vec::Vec;
 
 use crate::{
 	allocator::Allocator,
-	header::stdio,
+	header::{libgen, stdio},
 	platform::{
 		self,
 		types::{c_char, c_int},
@@ -128,6 +128,16 @@ pub unsafe extern "C" fn cilibc_start(sp: &'static Stack) -> ! {
 
 	alloc_init();
 
+	let argc = sp.argc;
+	let argv = sp.argv();
+	platform::inner_argv = copy_string_array(argv, argc as usize);
+	platform::argv = platform::inner_argv.as_mut_ptr();
+	if let Some(arg) = platform::inner_argv.get(0) {
+		platform::program_invocation_name = *arg;
+		platform::program_invocation_short_name = libgen::basename(*arg);
+	}
+
+	// Setup environ
 	if platform::environ.is_null() {
 		let envp = sp.envp();
 		let mut len = 0;
@@ -160,5 +170,5 @@ pub unsafe extern "C" fn cilibc_start(sp: &'static Stack) -> ! {
 		}
 	}
 
-	exit(main(0, core::ptr::null_mut(), core::ptr::null_mut()));
+	exit(main(argc, platform::argv, platform::environ));
 }

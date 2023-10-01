@@ -14,6 +14,7 @@ use utils::ring_buffer::RingBuffer;
 use crate::process::{current_process, process_group::ProcessGroup, wait_queue::WaitQueue};
 
 bitflags! {
+	#[derive(Debug, Clone, Copy)]
   pub struct LFlag: u32 {
 	  const ICANON = 0o0000002;
 	  const ECHO   = 0o0000010;
@@ -21,6 +22,7 @@ bitflags! {
 }
 
 bitflags! {
+	#[derive(Debug, Clone, Copy)]
   pub struct IFlag: u32 {
 	  const ICRNL  = 0o0000400;
   }

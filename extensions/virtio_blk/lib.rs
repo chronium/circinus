@@ -129,16 +129,16 @@ impl VirtioBlock {
 
 	pub fn operate(&mut self, op: BlockOp, sector: u64, buf: &mut [u8]) -> VirtioBlockStatus {
 		assert!(buf.len() == self.block_size);
-		trace!(
-			"{}: {} sector {}",
-			if op == BlockOp::Read {
-				"reading"
-			} else {
-				"writing"
-			},
-			virtio::Kind::BlockDevice,
-			sector.red()
-		);
+		// trace!(
+		// 	"{}: {} sector {}",
+		// 	if op == BlockOp::Read {
+		// 		"reading"
+		// 	} else {
+		// 		"writing"
+		// 	},
+		// 	virtio::Kind::BlockDevice,
+		// 	sector.red()
+		// );
 
 		let status_buffer = VolatileCell::new(VirtioBlockStatus::_NotReady);
 		let status_addr = VAddr::new(status_buffer.as_ptr() as usize).as_paddr();

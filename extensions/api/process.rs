@@ -1,9 +1,15 @@
 use alloc::sync::Arc;
+use atomic_refcell::AtomicRef;
 use environment::spinlock::SpinLock;
 
 use crate::{
+	cmdline::Cmdline,
 	ctypes::c_int,
-	vfs::{mount::Rootfs, opened_file::{OpenedFile, OpenedFileTable}, Fd},
+	vfs::{
+		mount::Rootfs,
+		opened_file::{OpenedFile, OpenedFileTable},
+		Fd,
+	},
 	Result,
 };
 
@@ -40,6 +46,7 @@ pub trait ProcessOps {
 	fn has_pending_signals(&self) -> bool;
 	fn resume(&self);
 	fn pid(&self) -> Pid;
+	fn cmdline(&self) -> AtomicRef<'_, Cmdline>;
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]

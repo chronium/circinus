@@ -1,4 +1,5 @@
-TARGET?=$(shell rustc -Z unstable-options --print target-spec-json | grep llvm-target | cut -d '"' -f4)
+TARGET?=x86_64-unknown-circinus
+DESTDIR?=$(shell pwd)/../sysroot
 
 CARGO?=cargo
 CARGO_TEST?=$(CARGO)

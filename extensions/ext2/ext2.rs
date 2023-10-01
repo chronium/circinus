@@ -116,17 +116,26 @@ impl vfs::File for DriveInode {
 		dst: api::user_buffer::UserBufferMut<'_>,
 		options: &api::io::OpenOptions,
 	) -> api::Result<usize> {
+		// Calculate the starting block and offset within that block based on the
+		// provided offset
+		let block_index = offset / self.ext2.block_size;
+		let block_offset = offset % self.ext2.block_size;
+
 		// TODO: Get rid of double read. Read directly into user buffer
 		let mut buf = vec![0u8; align_up(self.inode.lower_size as usize, self.ext2.block_size)];
 		let blocks = self.ext2.gather_blocks(&self.inode);
 		trace!("{:?}", blocks);
-		self.ext2.read_blocks(&blocks, &mut buf);
 
-		let write_len = (self.inode.lower_size as usize).min(buf.len()) - offset;
+		// Read only the relevant blocks based on the offset
+		self.ext2.read_blocks(&blocks[block_index..], &mut buf);
+
+		let write_len = (self.inode.lower_size as usize).min(dst.len());
 		let mut writer = api::user_buffer::UserBufWriter::from(dst);
+
+		// Write only the relevant part of the buffer to the user buffer
 		writer
-			.write_bytes(&buf[offset..write_len])
-			.map_err(|_| api::ErrorKind::BufferError);
+			.write_bytes(&buf[block_offset..block_offset + write_len])
+			.map_err(|_| api::ErrorKind::BufferError)?;
 
 		Ok(writer.written_len())
 	}

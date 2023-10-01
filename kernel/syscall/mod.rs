@@ -1,15 +1,18 @@
 use api::{
 	ctypes::c_int,
 	io::OpenFlags,
+	kernel::KernelOps,
 	schema::{
 		posix::FileMode,
 		unix::{Path, PathBuf},
 	},
 	user_buffer::UserCStr,
 	vfs::Fd,
-	Error, ErrorKind, Result,
+	Error, ErrorKind, ProcessOps, Result,
 };
 use environment::{address::UserVAddr, arch::PtRegs};
+
+use crate::process::current_process;
 
 const SYS_WRITE: usize = 1;
 const SYS_READ: usize = 2;
