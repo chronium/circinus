@@ -1,4 +1,4 @@
-use crate::c_str::CStr;
+use crate::{c_str::CStr, header::dirent::dirent};
 
 use super::types::*;
 
@@ -7,6 +7,14 @@ pub struct Sys;
 impl Sys {
   pub fn brk(caddr: *mut c_void) -> *mut c_void {
     syscall::brk(caddr as usize) as *mut c_void
+  }
+
+  pub fn open(path: &CStr, oflag: c_int, mode: mode_t) -> c_int {
+    syscall::open(path.as_ptr(), oflag, mode) as c_int
+  }
+
+  pub fn close(fd: c_int) -> c_int {
+    syscall::close(fd) as c_int
   }
 
   pub fn write(fd: c_int, buf: &[u8]) -> ssize_t {
@@ -27,5 +35,9 @@ impl Sys {
 
   pub unsafe fn chdir(path: &CStr) -> c_int {
     syscall::chdir(path.as_ptr()) as c_int
+  }
+
+  pub unsafe fn getdents(fd: c_int, dirents: *mut dirent, bytes: usize) -> c_int {
+    syscall::getdents(fd, dirents as usize, bytes) as c_int
   }
 }

@@ -2,7 +2,7 @@
 #![feature(linkage)]
 #![allow(non_camel_case_types)]
 
-use core::ffi::c_char;
+use core::ffi::{c_char, c_int};
 
 use syscall::{sys1, sys2, sys3, Syscall};
 
@@ -13,8 +13,12 @@ pub fn exit(status: i32) -> ! {
   unreachable!()
 }
 
-pub fn open<T: AsRef<str>>(path: T, flags: usize, mode: usize) -> usize {
-  sys3(Syscall::Open, path.as_ref().as_ptr() as usize, flags, mode)
+pub fn open(path: *const c_char, flags: c_int, mode: c_int) -> usize {
+  sys3(Syscall::Open, path as usize, flags as usize, mode as usize)
+}
+
+pub fn close(fd: i32) -> usize {
+  sys1(Syscall::Close, fd as usize)
 }
 
 pub fn brk(new_heap_end: usize) -> usize {
@@ -44,6 +48,10 @@ pub fn getcwd(path: *mut c_char, size: usize) -> usize {
 
 pub fn chdir(path: *const c_char) -> usize {
   sys1(Syscall::Chdir, path as usize)
+}
+
+pub fn getdents(fd: i32, buf: usize, bytes: usize) -> usize {
+  sys3(Syscall::GetDents64, fd as usize, buf, bytes)
 }
 
 #[linkage = "weak"]

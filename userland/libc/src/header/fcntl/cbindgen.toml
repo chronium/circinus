@@ -1,0 +1,10 @@
+sys_includes = ["starg.h", "sys/types.h"]
+include_guard = "_CILIBC_FCNTL_H"
+trailer = "#include <bits/fcntl.h>"
+language = "C"
+style = "Tag"
+no_includes = true
+cpp_compat = true
+
+[enum]
+prefix_with_name = true

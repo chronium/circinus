@@ -20,7 +20,8 @@ export LDFLAGS?=\
 	../../sysroot/lib/libc.a
 
 BINS=\
-	echo
+	echo \
+	ls
 
 export BUILD?=build
 export DESTDIR=../build

@@ -1,4 +1,6 @@
 pub mod ctype;
+pub mod dirent;
+pub mod fcntl;
 pub mod libgen;
 pub mod limits;
 pub mod stdio;

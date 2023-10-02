@@ -21,6 +21,8 @@ const SYS_OPEN: usize = 4;
 const SYS_EXECVE: usize = 5;
 const SYS_GETCWD: usize = 6;
 const SYS_CHDIR: usize = 7;
+const SYS_CLOSE: usize = 8;
+const SYS_GETDENTS64: usize = 9;
 const SYS_BRK: usize = 128;
 const SYS_EXIT: usize = -1isize as usize;
 
@@ -91,6 +93,8 @@ impl<'a> SyscallHandler<'a> {
       SYS_GETCWD => self.sys_getcwd(UserVAddr::new_nonnull(a1)?, a2 as c_size),
       SYS_BRK => self.sys_brk(UserVAddr::new(a1)),
       SYS_CHDIR => self.sys_chdir(&resolve_path(a1)?),
+      SYS_CLOSE => self.sys_close(Fd::new(a1 as i32)),
+      SYS_GETDENTS64 => self.sys_getdents64(Fd::new(a1 as i32), UserVAddr::new_nonnull(a2)?, a3),
       _ => {
         debug_warn!(
           "unimplemented system call: {} (n={})",
@@ -112,6 +116,7 @@ fn syscall_name_by_number(n: usize) -> &'static str {
     5 => "exec",
     6 => "getcwd",
     7 => "chdir",
+    8 => "close",
     128 => "brk",
     SYS_EXIT => "exit",
     _ => "(unknown)",
@@ -120,9 +125,11 @@ fn syscall_name_by_number(n: usize) -> &'static str {
 
 pub(self) mod brk;
 pub(self) mod chdir;
+pub(self) mod close;
 pub(self) mod execve;
 pub(self) mod exit;
 pub(self) mod getcwd;
+pub(self) mod getdents64;
 pub(self) mod open;
 pub(self) mod read;
 pub(self) mod stat;

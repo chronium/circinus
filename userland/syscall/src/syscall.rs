@@ -10,6 +10,8 @@ pub(crate) enum Syscall {
   Execve = 5,
   GetCwd = 6,
   Chdir = 7,
+  Close = 8,
+  GetDents64 = 9,
   Brk = 128,
   Exit = -1isize as usize,
 }
