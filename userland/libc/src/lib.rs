@@ -27,12 +27,12 @@ pub mod start;
 
 #[no_mangle]
 pub extern "C" fn cilibc_panic(pi: &::core::panic::PanicInfo) -> ! {
-	use core::fmt::Write;
+  use core::fmt::Write;
 
-	let mut w = platform::FileWriter(2);
-	let _ = w.write_fmt(format_args!("CILIBC PANIC: {}\n", pi));
+  let mut w = platform::FileWriter(2);
+  let _ = w.write_fmt(format_args!("CILIBC PANIC: {}\n", pi));
 
-	Sys::exit(1)
+  Sys::exit(1)
 }
 
 #[cfg(not(test))]
@@ -40,16 +40,16 @@ pub extern "C" fn cilibc_panic(pi: &::core::panic::PanicInfo) -> ! {
 #[linkage = "weak"]
 #[no_mangle]
 pub extern "C" fn rust_oom(layout: ::core::alloc::Layout) -> ! {
-	use core::fmt::Write;
+  use core::fmt::Write;
 
-	let mut w = platform::FileWriter(2);
-	let _ = w.write_fmt(format_args!(
-		"CILIBC OOM: {} bytes aligned to {} bytes\n",
-		layout.size(),
-		layout.align()
-	));
+  let mut w = platform::FileWriter(2);
+  let _ = w.write_fmt(format_args!(
+    "CILIBC OOM: {} bytes aligned to {} bytes\n",
+    layout.size(),
+    layout.align()
+  ));
 
-	Sys::exit(1);
+  Sys::exit(1);
 }
 
 #[cfg(not(test))]
@@ -57,7 +57,7 @@ pub extern "C" fn rust_oom(layout: ::core::alloc::Layout) -> ! {
 #[linkage = "weak"]
 #[no_mangle]
 pub extern "C" fn rust_begin_unwind(pi: &::core::panic::PanicInfo) -> ! {
-	cilibc_panic(pi)
+  cilibc_panic(pi)
 }
 
 #[cfg(not(test))]

@@ -1,31 +1,26 @@
 // Basically a copy of Stephen Brennan's LSH
 // URL: https://brennan.io/2015/01/16/write-a-shell-in-c/
 
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
 int sh_help(char **args);
+int sh_cd(char **args);
 
-char *builtin_str[] = {
-    "help"};
+char *builtin_str[] = {"help", "cd"};
 
-int (*builtin_func[])(char **) = {
-    &sh_help};
+int (*builtin_func[])(char **) = {&sh_help, &sh_cd};
 
-int sh_num_builtins()
-{
-  return sizeof(builtin_str) / sizeof(char *);
-}
+int sh_num_builtins() { return sizeof(builtin_str) / sizeof(char *); }
 
-int sh_help(char **args)
-{
+int sh_help(char **args) {
   printf("Circinus Shell\n");
 
   printf("Built in commands:\n");
-  for (int i = 0; i < sh_num_builtins(); i++)
-  {
+  for (int i = 0; i < sh_num_builtins(); i++) {
     printf(" %s \t", builtin_str[i]);
   }
   printf("\n");
@@ -33,24 +28,30 @@ int sh_help(char **args)
   return 1;
 }
 
-int sh_launch(char **args)
-{
-  return execv(args[0], args);
+int sh_cd(char **args) {
+  if (args[1] == NULL) {
+    fprintf(stderr, "sh: expected argument to \"cd\"\n");
+  } else {
+    if (chdir(args[1]) != 0) {
+      // TODO: perror("sh");
+      fprintf(stderr, "sh: no such file or directory: %s\n", args[1]);
+    }
+  }
+
+  return 1;
 }
 
-int sh_execute(char **args)
-{
+int sh_launch(char **args) { return execv(args[0], args); }
+
+int sh_execute(char **args) {
   int i;
 
-  if (args == NULL)
-  {
+  if (args == NULL) {
     return 1;
   }
 
-  for (i = 0; i < sh_num_builtins(); i++)
-  {
-    if (strcmp(args[0], builtin_str[i]) == 0)
-    {
+  for (i = 0; i < sh_num_builtins(); i++) {
+    if (strcmp(args[0], builtin_str[i]) == 0) {
       return (*builtin_func[i])(args);
     }
   }
@@ -59,40 +60,32 @@ int sh_execute(char **args)
 }
 
 #define SH_RL_BUFSIZE 1024
-char *sh_read_line(void)
-{
+char *sh_read_line(void) {
   int bufsize = SH_RL_BUFSIZE;
   int position = 0;
   char *buffer = malloc(sizeof(char) * bufsize);
   int c;
 
-  if (!buffer)
-  {
+  if (!buffer) {
     fprintf(stderr, "sh: allocation error\n");
     exit(EXIT_FAILURE);
   }
 
-  while (1)
-  {
+  while (1) {
     c = getchar();
 
-    if (c == EOF || c == '\n')
-    {
+    if (c == EOF || c == '\n') {
       buffer[position] = '\0';
       return buffer;
-    }
-    else
-    {
+    } else {
       buffer[position] = c;
     }
     position++;
 
-    if (position >= bufsize)
-    {
+    if (position >= bufsize) {
       bufsize += SH_RL_BUFSIZE;
       buffer = realloc(buffer, bufsize);
-      if (!buffer)
-      {
+      if (!buffer) {
         fprintf(stderr, "sh: allocation error\n");
         exit(EXIT_FAILURE);
       }
@@ -102,30 +95,25 @@ char *sh_read_line(void)
 
 #define SH_TOK_BUFSIZE 64
 #define SH_TOK_DELIM " \t\r\n\a"
-char **sh_split_line(char *line)
-{
+char **sh_split_line(char *line) {
   int bufsize = SH_TOK_BUFSIZE, position = 0;
   char **tokens = malloc(bufsize * sizeof(char *));
   char *token;
 
-  if (!tokens)
-  {
+  if (!tokens) {
     fprintf(stderr, "sh: allocation error\n");
     exit(EXIT_FAILURE);
   }
 
   token = strtok(line, SH_TOK_DELIM);
-  while (token != NULL)
-  {
+  while (token != NULL) {
     tokens[position] = token;
     position++;
 
-    if (position >= bufsize)
-    {
+    if (position >= bufsize) {
       bufsize += SH_TOK_BUFSIZE;
       tokens = realloc(tokens, bufsize * sizeof(char *));
-      if (!tokens)
-      {
+      if (!tokens) {
         fprintf(stderr, "sh: allocation error\n");
         exit(EXIT_FAILURE);
       }
@@ -137,15 +125,28 @@ char **sh_split_line(char *line)
   return tokens;
 }
 
-void sh_loop()
-{
+#define ANSI_RESET "\x1B[0m"
+#define ANSI_BLACK "\x1B[30m"
+#define ANSI_RED "\x1B[31m"
+#define ANSI_GREEN "\x1B[32m"
+#define ANSI_YELLOW "\x1B[33m"
+#define ANSI_BLUE "\x1B[34m"
+#define ANSI_MAGENTA "\x1B[35m"
+#define ANSI_CYAN "\x1B[36m"
+#define ANSI_WHITE "\x1B[37m"
+
+#define ANSI_BRIGHT "\x1B[1m"
+
+void sh_loop() {
   char *line;
   char **args;
   int status;
 
-  do
-  {
-    printf("> ");
+  do {
+    char cwd[PATH_MAX];
+    getcwd(cwd, PATH_MAX);
+    printf(ANSI_BRIGHT ANSI_BLUE "%s" ANSI_RESET, cwd);
+    printf(" > ");
     fflush(NULL);
     line = sh_read_line();
     args = sh_split_line(line);
@@ -156,8 +157,7 @@ void sh_loop()
   } while (status);
 }
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
   sh_loop();
 
   return EXIT_SUCCESS;
