@@ -1,4 +1,4 @@
-use core::ptr;
+use core::{mem, ptr};
 
 use crate::{
   c_str::CStr,
@@ -58,4 +58,9 @@ pub unsafe extern "C" fn getcwd(mut buf: *mut c_char, mut size: size_t) -> *mut 
 pub unsafe extern "C" fn chdir(path: *const c_char) -> c_int {
   let path = CStr::from_ptr(path);
   Sys::chdir(path)
+}
+
+#[no_mangle]
+pub extern "C" fn fork() -> pid_t {
+  Sys::fork()
 }

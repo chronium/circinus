@@ -40,4 +40,12 @@ impl Sys {
   pub unsafe fn getdents(fd: c_int, dirents: *mut dirent, bytes: usize) -> c_int {
     syscall::getdents(fd, dirents as usize, bytes) as c_int
   }
+
+  pub fn fork() -> pid_t {
+    syscall::fork() as pid_t
+  }
+
+  pub fn waitpid(pid: pid_t, stat_loc: *mut c_int, options: c_int) -> pid_t {
+    syscall::wait4(pid, stat_loc, options, core::ptr::null_mut()) as pid_t
+  }
 }

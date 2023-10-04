@@ -181,6 +181,10 @@ impl OpenedFileTable {
     })
   }
 
+  pub fn close_all(&mut self) {
+    self.files.clear()
+  }
+
   pub fn close_cloexec_files(&mut self) {
     for slot in &mut self.files {
       if matches!(

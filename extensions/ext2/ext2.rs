@@ -56,7 +56,30 @@ struct DriveInode {
 
 impl vfs::Directory for DriveInode {
   fn read_dir(&self, offset: usize) -> api::Result<Option<vfs::DirEntry>> {
-    todo!()
+    let dirents = self.ext2.read_dirent(&self.inode);
+    let Some(node) = dirents.iter().nth(offset) else {
+      return Ok(None);
+    };
+    match node.dirent_type {
+      crate::dirent::DirentType::Unknown => todo!(),
+      crate::dirent::DirentType::Regular => {
+        return Ok(Some(vfs::DirEntry {
+          name: node.name.clone(),
+          file_type: vfs::FileType::RegularFile,
+          node_id: NodeId::new(node.inode as usize),
+        }));
+      }
+      crate::dirent::DirentType::Directory => {
+        return Ok(Some(vfs::DirEntry {
+          name: node.name.clone(),
+          file_type: vfs::FileType::Directory,
+          node_id: NodeId::new(node.inode as usize),
+        }));
+      }
+      _ => unimplemented!(),
+    }
+
+    Err(api::ErrorKind::NotFound.into())
   }
 
   fn _lookup(&self, name: &str) -> api::Result<vfs::Node> {

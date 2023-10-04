@@ -23,7 +23,7 @@ impl<'a> SyscallHandler<'a> {
     while let Some(entry) = dir.readdir()? {
       let alignment = size_of::<u64>();
       let reclen = align_up(
-        size_of::<u64>() * 2 + size_of::<u16>() + entry.name.len() + 1,
+        size_of::<u64>() * 2 + size_of::<u16>() + 1 + entry.name.len() + 1,
         alignment,
       );
 

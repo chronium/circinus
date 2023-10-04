@@ -127,3 +127,44 @@ macro_rules! println {
     ($fmt:expr) => (print!(concat!($fmt, "\n")));
     ($fmt:expr, $($arg:tt)*) => (print!(concat!($fmt, "\n"), $($arg)*));
 }
+
+/// Print to stderr
+#[macro_export]
+macro_rules! eprint {
+    ($($arg:tt)*) => ({
+        use core::fmt::Write;
+        let _ = write!($crate::platform::FileWriter(2), $($arg)*);
+    });
+}
+
+/// Print with new line to stderr
+#[macro_export]
+macro_rules! eprintln {
+    () => (eprint!("\n"));
+    ($fmt:expr) => (eprint!(concat!($fmt, "\n")));
+    ($fmt:expr, $($arg:tt)*) => (eprint!(concat!($fmt, "\n"), $($arg)*));
+}
+
+/// Lifted from libstd
+#[macro_export]
+macro_rules! dbg {
+  () => {
+    eprintln!("[{}:{}]", file!(), line!());
+  };
+  ($val:expr) => {
+    // Use of `match` here is intentional because it affects the lifetimes
+    // of temporaries - https://stackoverflow.com/a/48732525/1063961
+    match $val {
+      tmp => {
+        eprintln!(
+          "[{}:{}] {} = {:#?}",
+          file!(),
+          line!(),
+          stringify!($val),
+          &tmp
+        );
+        tmp
+      }
+    }
+  };
+}

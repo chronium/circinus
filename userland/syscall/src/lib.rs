@@ -4,7 +4,7 @@
 
 use core::ffi::{c_char, c_int};
 
-use syscall::{sys1, sys2, sys3, Syscall};
+use syscall::*;
 
 pub mod syscall;
 
@@ -52,6 +52,20 @@ pub fn chdir(path: *const c_char) -> usize {
 
 pub fn getdents(fd: i32, buf: usize, bytes: usize) -> usize {
   sys3(Syscall::GetDents64, fd as usize, buf, bytes)
+}
+
+pub fn fork() -> usize {
+  sys(Syscall::Fork)
+}
+
+pub fn wait4(pid: i32, status: *mut i32, options: i32, rusage: *mut u8) -> usize {
+  sys4(
+    Syscall::Wait4,
+    pid as usize,
+    status as usize,
+    options as usize,
+    rusage as usize,
+  )
 }
 
 #[linkage = "weak"]

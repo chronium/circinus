@@ -83,7 +83,7 @@ pub unsafe extern "C" fn readdir(dir: *mut DIR) -> *mut dirent {
 
   let ptr = (*dir).buf.as_mut_ptr().add((*dir).index) as *mut dirent;
 
-  (*dir).index += (*ptr).d_reclen as usize;
   (*dir).offset = (*ptr).d_off as usize;
+  (*dir).index += (*ptr).d_reclen as usize;
   ptr
 }

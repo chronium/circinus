@@ -8,6 +8,7 @@
 #![feature(c_variadic)]
 #![feature(alloc_layout_extra)]
 #![feature(lang_items)]
+#![feature(thread_local)]
 
 use crate::platform::sys::Sys;
 

@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 int sh_help(char **args);
@@ -41,7 +42,32 @@ int sh_cd(char **args) {
   return 1;
 }
 
-int sh_launch(char **args) { return execv(args[0], args); }
+int sh_launch(char **args) {
+  pid_t pid, wpid;
+  int status;
+
+  pid = fork();
+
+  if (pid == 0) {
+    // Child process
+    if (execv(args[0], args) == -1) {
+      // TODO: perror("sh");
+      fprintf(stderr, "sh: no such file or directory: %s\n", args[0]);
+    }
+    exit(EXIT_FAILURE);
+  } else if (pid < 0) {
+    // Error forking
+    // TODO: perror("sh");
+    fprintf(stderr, "sh: error forking\n");
+  } else {
+    // Parent process
+    do {
+      wpid = waitpid(pid, &status, WUNTRACED);
+    } while (!WIFEXITED(status) /* TODO: Signals && !WIFSIGNALED(status)*/);
+  }
+
+  return 1;
+}
 
 int sh_execute(char **args) {
   int i;

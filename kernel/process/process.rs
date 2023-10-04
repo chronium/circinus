@@ -1,12 +1,13 @@
 use alloc::{
   collections::BTreeMap,
   sync::{Arc, Weak},
+  vec::Vec,
 };
 use core::{
   borrow::BorrowMut,
   cmp::max,
   mem::size_of,
-  sync::atomic::{AtomicI32, Ordering},
+  sync::atomic::{AtomicI32, AtomicUsize, Ordering},
 };
 
 use atomic_refcell::{AtomicRef, AtomicRefCell};
@@ -30,7 +31,7 @@ use environment::{
   address::{UserVAddr, VAddr},
   arch::{PtRegs, PAGE_SIZE},
   page_allocator::{alloc_pages, AllocPageFlags},
-  spinlock::SpinLock,
+  spinlock::{SpinLock, SpinLockGuard},
 };
 use utils::alignment::align_up;
 
@@ -43,15 +44,19 @@ use crate::{
     elf::Elf,
     init_stack::{estimate_user_init_stack_size, init_user_stack, Auxv},
     process_group::ProcessGroup,
-    switch, SCHEDULER,
+    switch, JOIN_WAIT_QUEUE, SCHEDULER,
   },
   random::read_secure_random,
   INITIAL_ROOT_FS,
 };
 
+use super::process_group;
+
 type ProcessTable = BTreeMap<Pid, Arc<Process>>;
 
 pub(super) static PROCESSES: SpinLock<ProcessTable> = SpinLock::new(BTreeMap::new());
+
+static FORK_TOTAL: AtomicUsize = AtomicUsize::new(0);
 
 pub(super) fn alloc_pid(table: &mut ProcessTable) -> Result<Pid> {
   static NEXT_PID: AtomicI32 = AtomicI32::new(2);
@@ -80,8 +85,10 @@ pub struct Process {
   process_group: AtomicRefCell<Weak<SpinLock<ProcessGroup>>>,
   pid: Pid,
   state: AtomicCell<ProcessState>,
+  parent: Weak<Process>,
   cmdline: AtomicRefCell<Cmdline>,
   vm: AtomicRefCell<Option<Arc<SpinLock<Vm>>>>,
+  children: SpinLock<Vec<Arc<Process>>>,
   rootfs: Arc<SpinLock<Rootfs>>,
   opened_files: Arc<SpinLock<OpenedFileTable>>,
 }
@@ -95,7 +102,9 @@ impl Process {
       process_group: AtomicRefCell::new(Arc::downgrade(&process_group)),
       pid: Pid::new(0),
       state: AtomicCell::new(ProcessState::Runnable),
+      parent: Weak::new(),
       cmdline: AtomicRefCell::new(Cmdline::new()),
+      children: SpinLock::new(Vec::new()),
       vm: AtomicRefCell::new(None),
       rootfs: INITIAL_ROOT_FS.clone(),
       opened_files: Arc::new(SpinLock::new(OpenedFileTable::new())),
@@ -119,7 +128,9 @@ impl Process {
       process_group: AtomicRefCell::new(Arc::downgrade(&process_group)),
       pid,
       state: AtomicCell::new(ProcessState::Runnable),
+      parent: Weak::new(),
       cmdline: AtomicRefCell::new(Cmdline::new()),
+      children: SpinLock::new(Vec::new()),
       vm: AtomicRefCell::new(None),
       rootfs: INITIAL_ROOT_FS.clone(),
       opened_files: Arc::new(SpinLock::new(OpenedFileTable::new())),
@@ -176,7 +187,9 @@ impl Process {
       process_group: AtomicRefCell::new(Arc::downgrade(&process_group)),
       pid,
       state: AtomicCell::new(ProcessState::Runnable),
+      parent: Weak::new(),
       cmdline: AtomicRefCell::new(Cmdline::from_argv(argv)),
+      children: SpinLock::new(Vec::new()),
       vm: AtomicRefCell::new(Some(Arc::new(SpinLock::new(entry.vm)))),
       rootfs,
       opened_files: Arc::new(SpinLock::new(opened_files)),
@@ -190,7 +203,7 @@ impl Process {
     Ok(())
   }
 
-  fn _pid(&self) -> Pid {
+  pub fn pid(&self) -> Pid {
     self.pid
   }
 
@@ -200,6 +213,10 @@ impl Process {
 
   pub fn cmdline(&self) -> AtomicRef<'_, Cmdline> {
     self.cmdline.borrow()
+  }
+
+  pub fn children(&self) -> SpinLockGuard<'_, Vec<Arc<Process>>> {
+    self.children.lock()
   }
 
   pub fn arch(&self) -> &arch::Process {
@@ -264,10 +281,10 @@ impl Process {
     // Close opened files here instead of in Drop::drop because `proc` is
     // not dropped until it's joined by the parent process. Drop them to
     // make pipes closed.
-    // current.opened_files.lock().close_all();
+    current.opened_files.lock().close_all();
 
     PROCESSES.lock().remove(&current.pid);
-    // JOIN_WAIT_QUEUE.wake_all();
+    JOIN_WAIT_QUEUE.wake_all();
     switch();
     unreachable!();
   }
@@ -310,6 +327,40 @@ impl Process {
       .setup_execve_stack(frame, entry.ip, entry.user_sp)?;
 
     Ok(())
+  }
+
+  pub fn fork(parent: &Arc<Process>, parent_frame: &PtRegs) -> Result<Arc<Process>> {
+    let parent_weak = Arc::downgrade(parent);
+    let mut process_table = PROCESSES.lock();
+    let pid = alloc_pid(&mut process_table)?;
+    let arch = parent.arch.fork(parent_frame)?;
+    let vm = parent.vm().as_ref().unwrap().lock().fork()?;
+    let opened_files = parent.opened_files().lock().clone();
+    let process_group = parent.process_group();
+    // TODO: let sig_set = parent.sigset.lock();
+
+    let child = Arc::new(Process {
+      is_idle: false,
+      process_group: AtomicRefCell::new(Arc::downgrade(&process_group)),
+      pid,
+      state: AtomicCell::new(ProcessState::Runnable),
+      parent: parent_weak,
+      cmdline: AtomicRefCell::new(parent.cmdline().clone()),
+      children: SpinLock::new(Vec::new()),
+      vm: AtomicRefCell::new(Some(Arc::new(SpinLock::new(vm)))),
+      opened_files: Arc::new(SpinLock::new(opened_files)),
+      rootfs: parent.rootfs().clone(),
+      arch,
+      // TODO: Signals
+    });
+
+    process_group.lock().add(Arc::downgrade(&child));
+    parent.children().push(child.clone());
+    process_table.insert(pid, child.clone());
+    SCHEDULER.lock().enqueue(pid);
+
+    FORK_TOTAL.fetch_add(1, Ordering::Relaxed);
+    Ok(child)
   }
 
   pub fn process_group(&self) -> Arc<SpinLock<ProcessGroup>> {
@@ -365,7 +416,7 @@ impl ProcessOps for Process {
   }
 
   fn pid(&self) -> api::process::Pid {
-    self._pid()
+    self.pid()
   }
 
   fn opened_files(&self) -> Arc<SpinLock<OpenedFileTable>> {
@@ -434,7 +485,7 @@ fn do_setup_userspace(
     Auxv::Pagesz(PAGE_SIZE),
     Auxv::Random(random_bytes),
   ];
-  const USER_STACK_LEN: usize = 1024 * 1024; // TODO: Implement rlimit
+  const USER_STACK_LEN: usize = 1024 * 1024 * 16; // TODO: Implement rlimit
   let init_stack_top = file_header_top.sub(file_header_len);
   let user_stack_bottom = init_stack_top.sub(USER_STACK_LEN).value();
   let user_heap_bottom = align_up(end_of_image, PAGE_SIZE);

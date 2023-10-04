@@ -84,7 +84,7 @@ impl Error {
   }
 
   pub fn errno(&self) -> usize {
-    self.kind as usize
+    -(self.kind as isize) as usize
   }
 }
 
