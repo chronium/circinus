@@ -7,10 +7,16 @@ int main(int argc, char **argv) {
   DIR *dir;
   struct dirent *ent;
 
-  char cwd[PATH_MAX];
-  getcwd(cwd, PATH_MAX);
+  char *path;
+  if (argv[1] == NULL) {
+    char cwd[PATH_MAX];
+    getcwd(cwd, PATH_MAX);
+    path = cwd;
+  } else {
+    path = argv[1];
+  }
 
-  if ((dir = opendir(cwd)) != NULL) {
+  if ((dir = opendir(path)) != NULL) {
     while ((ent = readdir(dir)) != NULL) {
       printf("%s\n", ent->d_name);
     }

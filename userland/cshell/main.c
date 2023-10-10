@@ -50,7 +50,7 @@ int sh_launch(char **args) {
 
   if (pid == 0) {
     // Child process
-    if (execv(args[0], args) == -1) {
+    if (execvp(args[0], args) == -1) {
       // TODO: perror("sh");
       fprintf(stderr, "sh: no such file or directory: %s\n", args[0]);
     }
@@ -167,6 +167,14 @@ void sh_loop() {
   char *line;
   char **args;
   int status;
+
+  char *path;
+  path = getenv("PATH");
+  printf("PATH: %s\n", path);
+
+  setenv("PATH", "/ext2/bin", 1);
+  path = getenv("PATH");
+  printf("PATH: %s\n", path);
 
   do {
     char cwd[PATH_MAX];

@@ -2,10 +2,11 @@ use core::{mem, ptr};
 
 use crate::{
   c_str::CStr,
+  header::errno,
   platform::{self, sys::Sys, types::*},
 };
 
-use super::limits;
+use super::{limits, stdlib::getenv};
 
 #[no_mangle]
 pub unsafe extern "C" fn execv(path: *const c_char, argv: *const *mut c_char) -> c_int {
@@ -63,4 +64,37 @@ pub unsafe extern "C" fn chdir(path: *const c_char) -> c_int {
 #[no_mangle]
 pub extern "C" fn fork() -> pid_t {
   Sys::fork()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn execvp(file: *const c_char, argv: *const *mut c_char) -> c_int {
+  let file = CStr::from_ptr(file);
+
+  if file.to_bytes().contains(&b'/') {
+    execv(file.as_ptr(), argv)
+  } else {
+    let mut error = errno::ENOENT;
+
+    let path_env = getenv(c_str!("PATH\0").as_ptr());
+    if !path_env.is_null() {
+      let path_env = CStr::from_ptr(path_env);
+      for path in path_env.to_bytes().split(|&b| b == b':') {
+        let mut program = path.to_vec();
+        program.push(b'/');
+        program.extend_from_slice(file.to_bytes());
+        program.push(b'\0');
+
+        let program_c = CStr::from_bytes_with_nul(&program).unwrap();
+        execv(program_c.as_ptr(), argv);
+
+        match platform::errno {
+          errno::ENOENT => (),
+          other => error = other,
+        }
+      }
+    }
+
+    platform::errno = error;
+    -1
+  }
 }

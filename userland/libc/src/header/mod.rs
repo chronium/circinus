@@ -1,5 +1,6 @@
 pub mod ctype;
 pub mod dirent;
+pub mod errno;
 pub mod fcntl;
 pub mod libgen;
 pub mod limits;
