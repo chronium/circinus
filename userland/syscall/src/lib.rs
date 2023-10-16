@@ -2,7 +2,7 @@
 #![feature(linkage)]
 #![allow(non_camel_case_types)]
 
-use core::ffi::{c_char, c_int};
+use core::ffi::{c_char, c_int, c_long, c_longlong};
 
 use syscall::*;
 
@@ -65,6 +65,19 @@ pub fn wait4(pid: i32, status: *mut i32, options: i32, rusage: *mut u8) -> usize
     status as usize,
     options as usize,
     rusage as usize,
+  )
+}
+
+pub fn fcntl(fd: i32, cmd: i32, arg: usize) -> usize {
+  sys3(Syscall::Fcntl, fd as usize, cmd as usize, arg)
+}
+
+pub fn lseek(fd: i32, offset: c_longlong, whence: i32) -> usize {
+  sys3(
+    Syscall::LSeek,
+    fd as usize,
+    offset as usize,
+    whence as usize,
   )
 }
 

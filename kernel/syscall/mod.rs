@@ -26,6 +26,8 @@ const SYS_GETCWD: usize = 6;
 const SYS_CHDIR: usize = 7;
 const SYS_CLOSE: usize = 8;
 const SYS_GETDENTS64: usize = 9;
+const SYS_FCNTL: usize = 10;
+const SYS_LSEEK: usize = 11;
 const SYS_WAIT4: usize = 126;
 const SYS_FORK: usize = 127;
 const SYS_BRK: usize = 128;
@@ -100,6 +102,8 @@ impl<'a> SyscallHandler<'a> {
       SYS_CHDIR => self.sys_chdir(&resolve_path(a1)?),
       SYS_CLOSE => self.sys_close(Fd::new(a1 as i32)),
       SYS_GETDENTS64 => self.sys_getdents64(Fd::new(a1 as i32), UserVAddr::new_nonnull(a2)?, a3),
+      SYS_FCNTL => self.sys_fcntl(Fd::new(a1 as i32), a2 as c_int, a3),
+      SYS_LSEEK => self.sys_lseek(Fd::new(a1 as i32), a2 as isize, a3 as isize),
       SYS_WAIT4 => self.sys_wait4(
         Pid::new(a1 as i32),
         UserVAddr::new(a2),
@@ -129,6 +133,9 @@ fn syscall_name_by_number(n: usize) -> &'static str {
     6 => "getcwd",
     7 => "chdir",
     8 => "close",
+    9 => "getdents64",
+    10 => "fcntl",
+    11 => "lseek",
     126 => "wait4",
     127 => "fork",
     128 => "brk",
@@ -142,9 +149,11 @@ pub(self) mod chdir;
 pub(self) mod close;
 pub(self) mod execve;
 pub(self) mod exit;
+pub(self) mod fcntl;
 pub(self) mod fork;
 pub(self) mod getcwd;
 pub(self) mod getdents64;
+pub(self) mod lseek;
 pub(self) mod open;
 pub(self) mod read;
 pub(self) mod stat;

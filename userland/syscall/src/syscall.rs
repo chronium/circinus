@@ -12,6 +12,8 @@ pub(crate) enum Syscall {
   Chdir = 7,
   Close = 8,
   GetDents64 = 9,
+  Fcntl = 10,
+  LSeek = 11,
   Wait4 = 126,
   Fork = 127,
   Brk = 128,

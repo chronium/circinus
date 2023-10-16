@@ -48,4 +48,12 @@ impl Sys {
   pub fn waitpid(pid: pid_t, stat_loc: *mut c_int, options: c_int) -> pid_t {
     syscall::wait4(pid, stat_loc, options, core::ptr::null_mut()) as pid_t
   }
+
+  pub fn fcntl(fd: c_int, cmd: c_int, arg: c_ulonglong) -> c_int {
+    syscall::fcntl(fd, cmd, arg as usize) as c_int
+  }
+
+  pub fn lseek(fd: c_int, offset: off_t, whence: c_int) -> off_t {
+    syscall::lseek(fd, offset, whence) as off_t
+  }
 }

@@ -21,6 +21,8 @@ pub enum ErrorKind {
   TooBig,
   TooShort,
 
+  EBADF = 9,
+
   NotExecutable,
   NoSyscall,
   Interrupted,
@@ -36,6 +38,9 @@ pub enum ErrorKind {
   BadFile,
 
   BufferError,
+
+  EINVAL = 22,
+  ENOSYS = 38,
 }
 
 pub type Result<T> = ::core::result::Result<T, Error>;

@@ -10,12 +10,12 @@ extern crate alloc;
 use core::mem::size_of;
 
 use alloc::{
-	string::{String, ToString},
-	sync::Arc,
+  string::{String, ToString},
+  sync::Arc,
 };
 use cmdline::Cmdline;
 use ctypes::c_int;
-use environment::spinlock::SpinLock;
+use environment::spinlock::{SpinLock, SpinLockGuard};
 use kernel::kernel_ops;
 use process::{Pid, ProcessState};
 use vfs::{mount::Rootfs, opened_file::OpenedFileTable};
@@ -26,90 +26,86 @@ pub use process::ProcessOps;
 pub use result::{Error, ErrorKind, Result};
 
 pub mod address {
-	pub use environment::address::{PAddr, VAddr};
+  pub use environment::address::{PAddr, VAddr};
 }
 
 pub mod arch {
-	pub use environment::arch::{idle, PAGE_SIZE};
+  pub use environment::arch::{idle, PAGE_SIZE};
 }
 
 pub mod mm {
-	pub use environment::page_allocator::{alloc_pages, AllocPageFlags, PageAllocError};
+  pub use environment::page_allocator::{alloc_pages, AllocPageFlags, PageAllocError};
 }
 
 pub mod sync {
-	pub use environment::spinlock::{SpinLock, SpinLockGuard};
+  pub use environment::spinlock::{SpinLock, SpinLockGuard};
 }
 
 pub mod owo_colors {
-	pub use owo_colors::*;
+  pub use owo_colors::*;
 }
 
 pub mod bitflags {
-	pub use bitflags::*;
+  pub use bitflags::*;
 }
 
 pub mod hashbrown {
-	pub use hashbrown::*;
+  pub use hashbrown::*;
 }
 
 pub mod memoffset {
-	pub use memoffset::*;
+  pub use memoffset::*;
 }
 
 macro_rules! proc {
-	($k:expr) => {{
-		$k.current_process().unwrap()
-	}};
+  ($k:expr) => {{
+    $k.current_process().unwrap()
+  }};
 }
 
 pub struct Process;
 
 impl Process {
-	pub fn rootfs() -> Arc<SpinLock<Rootfs>> {
-		proc!(kernel_ops()).rootfs().clone()
-	}
+  pub fn rootfs() -> Arc<SpinLock<Rootfs>> {
+    proc!(kernel_ops()).rootfs().clone()
+  }
 
-	pub fn exit(status: c_int) -> ! {
-		proc!(kernel_ops()).exit(status)
-	}
+  pub fn exit(status: c_int) -> ! {
+    proc!(kernel_ops()).exit(status)
+  }
 
-	pub fn opened_files() -> Arc<SpinLock<OpenedFileTable>> {
-		proc!(kernel_ops()).opened_files()
-	}
+  pub fn opened_files() -> Arc<SpinLock<OpenedFileTable>> {
+    proc!(kernel_ops()).opened_files()
+  }
 
-	pub fn get_open_file_by_fid(fd: vfs::Fd) -> result::Result<Arc<vfs::opened_file::OpenedFile>> {
-		proc!(kernel_ops()).get_open_file_by_fid(fd)
-	}
+  pub fn set_state(new_state: ProcessState) {
+    proc!(kernel_ops()).set_state(new_state)
+  }
 
-	pub fn set_state(new_state: ProcessState) {
-		proc!(kernel_ops()).set_state(new_state)
-	}
+  pub fn has_pending_signals() -> bool {
+    proc!(kernel_ops()).has_pending_signals()
+  }
 
-	pub fn has_pending_signals() -> bool {
-		proc!(kernel_ops()).has_pending_signals()
-	}
+  pub fn resume() {
+    proc!(kernel_ops()).resume()
+  }
 
-	pub fn resume() {
-		proc!(kernel_ops()).resume()
-	}
+  pub fn pid() -> Pid {
+    proc!(kernel_ops()).pid()
+  }
 
-	pub fn pid() -> Pid {
-		proc!(kernel_ops()).pid()
-	}
-
-	pub fn argv0() -> String {
-		proc!(kernel_ops()).cmdline().argv0().to_string()
-	}
+  pub fn argv0() -> String {
+    proc!(kernel_ops()).cmdline().argv0().to_string()
+  }
 }
 
 pub unsafe trait AsBuf: Sized {
-	fn as_buf(&self) -> &[u8] {
-		unsafe { core::slice::from_raw_parts(self as *const _ as _, size_of::<Self>()) }
-	}
-	fn as_buf_mut(&mut self) -> &mut [u8] {
-		unsafe { core::slice::from_raw_parts_mut(self as *mut _ as _, size_of::<Self>()) }
-	}
+  fn as_buf(&self) -> &[u8] {
+    unsafe { core::slice::from_raw_parts(self as *const _ as _, size_of::<Self>()) }
+  }
+  fn as_buf_mut(&mut self) -> &mut [u8] {
+    unsafe { core::slice::from_raw_parts_mut(self as *mut _ as _, size_of::<Self>()) }
+  }
 }
 
 /// Prints and returns the value of a given expression for quick and dirty
@@ -160,9 +156,9 @@ pub unsafe trait AsBuf: Sized {
 ///
 /// ```rust
 /// fn foo(n: usize) {
-/// 	if let Some(_) = dbg!(n.checked_sub(4)) {
-/// 		// ...
-/// 	}
+///   if let Some(_) = dbg!(n.checked_sub(4)) {
+///     // ...
+///   }
 /// }
 ///
 /// foo(3)
@@ -178,11 +174,11 @@ pub unsafe trait AsBuf: Sized {
 ///
 /// ```rust
 /// fn factorial(n: u32) -> u32 {
-/// 	if dbg!(n <= 1) {
-/// 		dbg!(1)
-/// 	} else {
-/// 		dbg!(n * factorial(n - 1))
-/// 	}
+///   if dbg!(n <= 1) {
+///     dbg!(1)
+///   } else {
+///     dbg!(n * factorial(n - 1))
+///   }
 /// }
 ///
 /// dbg!(factorial(4));

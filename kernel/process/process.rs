@@ -251,10 +251,6 @@ impl Process {
     }
   }
 
-  fn get_opened_file_by_fd(&self, fd: Fd) -> Result<Arc<OpenedFile>> {
-    Ok(self.opened_files.lock().get(fd)?.clone())
-  }
-
   fn exit(status: c_int) -> ! {
     let current = current_process();
     if current.pid == Pid::new(1) {
@@ -394,13 +390,6 @@ impl ProcessOps for Process {
 
   fn exit(&self, status: c_int) -> ! {
     Process::exit(status)
-  }
-
-  fn get_open_file_by_fid(
-    &self,
-    fd: api::vfs::Fd,
-  ) -> Result<Arc<api::vfs::opened_file::OpenedFile>> {
-    self.get_opened_file_by_fd(fd)
   }
 
   fn set_state(&self, new_state: ProcessState) {

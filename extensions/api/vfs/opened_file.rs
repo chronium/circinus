@@ -4,7 +4,7 @@ use atomic_refcell::AtomicRefCell;
 use crossbeam::atomic::AtomicCell;
 
 use crate::{
-  io,
+  io::{self, OpenFlags},
   user_buffer::{UserBuffer, UserBufferMut},
   vfs::{interface::PathComponent, Node},
   Error, ErrorKind, Result,
@@ -43,12 +43,21 @@ impl OpenedFile {
     self.pos.load()
   }
 
+  pub fn size(&self) -> Result<usize> {
+    Ok(self.as_file()?.stat()?.size)
+  }
+
   pub fn options(&self) -> io::OpenOptions {
     *self.options.borrow()
   }
 
   pub fn node(&self) -> &Node {
     &self.path.node
+  }
+
+  pub fn seek(&self, pos: usize) -> Result<()> {
+    self.pos.store(pos);
+    Ok(())
   }
 
   pub fn read(&self, buf: UserBufferMut<'_>) -> Result<usize> {
@@ -77,6 +86,19 @@ impl OpenedFile {
     let entry = self.as_dir()?.read_dir(pos)?;
     self.pos.fetch_add(1);
     Ok(entry)
+  }
+
+  pub fn set_cloexec(&self, cloexec: bool) {
+    // FIXME: Modify LocalOpenedFile as well!
+    self.options.borrow_mut().close_on_exec = cloexec;
+  }
+
+  pub fn set_flags(&self, flags: OpenFlags) -> Result<()> {
+    if flags.contains(OpenFlags::O_NONBLOCK) {
+      self.options.borrow_mut().nonblock = true;
+    }
+
+    Ok(())
   }
 }
 
