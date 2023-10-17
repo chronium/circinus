@@ -38,8 +38,8 @@ pub fn execve(path: *const c_char, argv: *const *mut c_char, envp: *const *mut c
   sys3(Syscall::Execve, path as usize, argv as usize, envp as usize)
 }
 
-pub fn read(fd: i32, buf: &[u8]) -> usize {
-  sys3(Syscall::Read, fd as usize, buf.as_ptr() as usize, buf.len())
+pub fn read(fd: i32, buf: &[u8]) -> isize {
+  sys3(Syscall::Read, fd as usize, buf.as_ptr() as usize, buf.len()) as isize
 }
 
 pub fn getcwd(path: *mut c_char, size: usize) -> usize {

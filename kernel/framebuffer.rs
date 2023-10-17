@@ -258,6 +258,11 @@ impl vte::Perform for Framebuffer {
             match sub {
               0 => self.reset(),
               1 => self.bright = true,
+              7 => {
+                let tmp = self.fg;
+                self.fg = self.bg;
+                self.bg = tmp;
+              }
               30..=37 => {
                 if self.bright {
                   self.fg = self.colors[(sub - 22) as usize].into();

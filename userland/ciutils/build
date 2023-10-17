@@ -1,0 +1,42 @@
+#! /bin/sh
+
+# This script is used to build the ciutils package.
+
+OPIND=1
+
+build_libc=0
+clean=0
+
+while getopts "l:c" opt; do
+  case $opt in
+  l)
+    build_libc=1
+    ;;
+  c)
+    clean=1
+    ;;
+  \?)
+    echo "Invalid option: -$OPTARG" >&2
+    exit 1
+    ;;
+  esac
+done
+
+shift $((OPTIND - 1))
+
+[ "$1" = "--" ] && shift
+
+if [ $build_libc -eq 1 ]; then
+  echo "Building libc..."
+  cd ../libc
+  make install
+  cd ../ciutils
+fi
+
+echo "Building ciutils..."
+
+if [ $clean -eq 1 ]; then
+  make clean
+fi
+
+make install

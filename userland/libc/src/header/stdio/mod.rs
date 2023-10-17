@@ -93,9 +93,8 @@ pub struct FILE {
 }
 
 impl Read for FILE {
-  fn read(&mut self, out: &mut [u8]) -> core_io::Result<usize> {
+  fn read(&mut self, out: &mut [u8]) -> io::Result<usize> {
     let unget_read_size = cmp::min(out.len(), self.unget.len());
-
     for i in 0..unget_read_size {
       out[i] = self.unget.pop().unwrap();
     }
@@ -110,7 +109,6 @@ impl Read for FILE {
       out[..len].copy_from_slice(&buf[..len]);
       len
     };
-
     self.consume(len);
     Ok(len)
   }
@@ -132,7 +130,6 @@ impl BufRead for FILE {
       };
       self.read_pos = 0;
     }
-
     Ok(&self.read_buf[self.read_pos..self.read_size])
   }
 
@@ -273,7 +270,7 @@ pub unsafe extern "C" fn getchar() -> c_int {
 #[no_mangle]
 pub unsafe extern "C" fn getc_unlocked(stream: *mut FILE) -> c_int {
   if (*stream).try_set_byte_orientation_unlocked().is_err() {
-    return -1;
+    return EOF;
   }
 
   let mut buf = [0];
@@ -502,4 +499,60 @@ pub unsafe extern "C" fn ftell_locked(stream: &mut FILE) -> off_t {
 #[no_mangle]
 pub unsafe extern "C" fn rewind(stream: *mut FILE) {
   fseeko(stream, 0, SEEK_SET);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn fread(
+  ptr: *mut c_void,
+  size: size_t,
+  nitems: size_t,
+  stream: *mut FILE,
+) -> size_t {
+  if size == 0 || nitems == 0 {
+    return 0;
+  }
+
+  let mut stream = (*stream).lock();
+  if stream.try_set_byte_orientation_unlocked().is_err() {
+    return 0;
+  }
+
+  let buf = slice::from_raw_parts_mut(ptr as *mut u8, size * nitems);
+  let mut read = 0;
+
+  while read < buf.len() {
+    match stream.read(&mut buf[read..]) {
+      Ok(0) | Err(_) => break,
+      Ok(n) => read += n,
+    }
+  }
+
+  read / size
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn putchar(c: c_int) -> c_int {
+  fputc(c, &mut *stdout)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn fputc(c: c_int, stream: *mut FILE) -> c_int {
+  let mut stream = (*stream).lock();
+  if stream.try_set_byte_orientation_unlocked().is_err() {
+    return EOF;
+  }
+
+  putc_unlocked(c, &mut *stream)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn putc_unlocked(c: c_int, stream: *mut FILE) -> c_int {
+  if (*stream).try_set_byte_orientation_unlocked().is_err() {
+    return EOF;
+  }
+
+  match (*stream).write(&[c as u8]) {
+    Ok(0) | Err(_) => EOF,
+    Ok(_) => c,
+  }
 }

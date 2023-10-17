@@ -139,6 +139,10 @@ impl vfs::File for DriveInode {
     dst: api::user_buffer::UserBufferMut<'_>,
     options: &api::io::OpenOptions,
   ) -> api::Result<usize> {
+    if offset >= self.inode.lower_size as usize {
+      return Ok(0);
+    }
+
     // Calculate the starting block and offset within that block based on the
     // provided offset
     let block_index = offset / self.ext2.block_size;

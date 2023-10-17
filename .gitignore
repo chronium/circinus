@@ -20,3 +20,5 @@ virtio-net.pcap
 **/build/**
 
 **/bins_static/**
+
+**/bins/**

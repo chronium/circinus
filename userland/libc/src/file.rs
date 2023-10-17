@@ -21,7 +21,7 @@ impl File {
 
   pub fn open(path: &CStr, oflag: c_int) -> core_io::Result<Self> {
     match Sys::open(path, oflag, 0) {
-      -1 => todo!(), // TODO: Err(core_io::Error::last_os_error()),
+      -1 => Err(io::last_os_error()),
       fd => Ok(Self::new(fd)),
     }
   }
@@ -34,9 +34,18 @@ impl File {
   }
 }
 
+impl io::Read for &File {
+  fn read(&mut self, buf: &mut [u8]) -> core_io::Result<usize> {
+    match syscall::read(self.fd, buf) {
+      -1 => Err(io::last_os_error()),
+      ok => Ok(ok as usize),
+    }
+  }
+}
+
 impl io::Read for File {
   fn read(&mut self, buf: &mut [u8]) -> core_io::Result<usize> {
-    Ok(syscall::read(self.fd, buf))
+    (&mut &*self).read(buf)
   }
 }
 

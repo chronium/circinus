@@ -21,9 +21,10 @@ export LDFLAGS?=\
 
 BINS=\
 	echo \
-	ls
+	ls \
+	cat
 
-export BUILD?=build
+export BUILD?=bins
 export DESTDIR=../build
 
 .PHONY: all clean install $(BINS)
