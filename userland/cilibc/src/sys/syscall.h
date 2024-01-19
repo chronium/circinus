@@ -14,6 +14,7 @@ extern "C" {
 
 #define SYS_EXIT -1
 #define SYS_WRITE 1
+#define SYS_BRK 128
 
 #if defined(__cplusplus)
 } /* extern "C" */

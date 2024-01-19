@@ -8,6 +8,8 @@ extern "C" {
   typedef unsigned long int size_t;
   typedef long int ssize_t;
 
+#define NULL 0
+
 #if defined(__cplusplus)
 } /* extern "C" */
 #endif

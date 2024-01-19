@@ -1,4 +1,4 @@
-#include <sys/syscall.h>
+#include "syscall.h"
 #include <stdint.h>
 
 [[ noreturn ]] void exit(int exit_code) {
