@@ -1,0 +1,6 @@
+#ifndef _CILIBC_BITS_STDINT_H
+#define _CILIBC_BITS_STDINT_H
+
+
+
+#endif /* _CILIBC_BITS_STDINT_H */

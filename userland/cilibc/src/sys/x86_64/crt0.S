@@ -10,9 +10,9 @@ _start:
   pushq %rsi
   pushq %rdi
 
-  call init_stdlib
-
   call _init
+
+  call init_stdlib
 
   popq %rdi
   popq %rsi

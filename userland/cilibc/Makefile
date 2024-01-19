@@ -9,15 +9,16 @@ stdlib = $(src_dir)/stdlib
 
 crt_objects = $(sys64)/crt0.o $(sys64)/crti.o $(sys64)/crtn.o
 other_objects = $(sys64)/syscall.o\
+								$(src_dir)/alloc/liballoc.o\
 								$(sys)/exit.o\
 								$(sys)/write.o\
 								$(sys)/brk.o\
 								$(string)/strlen.o\
 								$(stdio)/puts.o\
-								$(src_dir)/cilibc.o\
+								$(stdio)/fputc.o\
 								$(stdio)/printf.o\
-								$(src_dir)/alloc/liballoc.o\
-								$(stdlib)/mem.o
+								$(stdlib)/mem.o\
+								$(src_dir)/cilibc.o
 objects = $(crt_objects) $(other_objects)
 build_dir = ../sysroot
 
