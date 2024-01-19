@@ -3,23 +3,36 @@ src_dir = src
 
 sys = $(src_dir)/sys
 sys64 = $(sys)/x86_64
-string = ${src_dir}/string
-stdio = ${src_dir}/stdio
+string = $(src_dir)/string
+stdio = $(src_dir)/stdio
+stdlib = $(src_dir)/stdlib
 
 crt_objects = $(sys64)/crt0.o $(sys64)/crti.o $(sys64)/crtn.o
-other_objects = $(sys64)/syscall.o $(sys)/exit.o $(sys)/write.o $(string)/strlen.o $(stdio)/puts.o $(src_dir)/cilibc.o $(stdio)/printf.o
+other_objects = $(sys64)/syscall.o\
+								$(sys)/exit.o\
+								$(sys)/write.o\
+								$(sys)/brk.o\
+								$(string)/strlen.o\
+								$(stdio)/puts.o\
+								$(src_dir)/cilibc.o\
+								$(stdio)/printf.o\
+								$(src_dir)/alloc/liballoc.o\
+								$(stdlib)/mem.o
 objects = $(crt_objects) $(other_objects)
 build_dir = ../sysroot
+
+CFLAGS=-Iinclude/
 
 .PHONY: all clean install
 
 all: libc.a
 
+
 %.o: %.S
-	${target}-as $< -o $@
+	${target}-as -c $< -o $@
 
 %.o: %.c
-	${target}-gcc -Iinclude/ -c $< -o $@
+	${target}-gcc $(CFLAGS) -c $< -o $@
 
 libc.a: $(objects)
 	${target}-ar rcs libc.a $(objects)

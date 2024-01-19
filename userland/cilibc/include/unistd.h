@@ -8,6 +8,7 @@ extern "C" {
 #include <stddef.h>
 
   ssize_t write(int fd, const void* buf, size_t count);
+  void* brk(void* addr);
 
 #if defined(__cplusplus)
 } /* extern "C" */
