@@ -2,7 +2,7 @@
 
 set -e
 
-x86_64-unknown-circinus-gcc -static -no-pie -fno-exceptions test.c -o test
+x86_64-unknown-circinus-gcc -static -no-pie -O0 -std=c2x -fno-builtin -fno-exceptions test.c -o test
 
 cp -v test ../build
 
