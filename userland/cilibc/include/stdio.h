@@ -24,6 +24,8 @@ extern "C" {
   int vprintf(const char*restrict, va_list);
 
   int fputc(int, FILE *);
+  int fputs(const char *restrict, FILE *restrict);
+
   int fflush(FILE *);
 #define putc(c, stream) fputc(c, stream);
 

@@ -8,8 +8,6 @@ int main(int argc, char* argv[]) {
 
   printf("Hello %s\n", "printf");
   printf("Numbers! %i\n", 1234);
-
-  fputc('a', stdout);
-
+  
   return 0;
 }

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
-int fputc(int c, FILE *stream) {
+int fputc(register int c, FILE *stream) {
   if (stream->bufpos + 1 >= stream->bufsiz)
     fflush(stream);
 
@@ -23,4 +23,15 @@ int fflush(FILE *stream) {
   stream->bufpos = 0;
 
   return 0;
+}
+
+int fputs(const char *restrict s, FILE *restrict stream) {
+  const char *p = s;
+
+  // TODO: EOF check
+  while (*p != 0) {
+    fputc(*p++, stream);
+  }
+
+  return p - s;
 }

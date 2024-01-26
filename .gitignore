@@ -25,3 +25,7 @@ virtio-net.pcap
 
 *.swp
 **/*.swp
+
+**/.cmake
+
+**/cmake-build-debug
