@@ -177,7 +177,7 @@ pub fn boot_kernel(#[cfg_attr(debug_assertions, allow(unused))] bootinfo: &BootI
     INITIAL_ROOT_FS.clone(),
     executable_path,
     devcon,
-    &[b"/{init}"],
+    &[format!("/{init}").as_bytes()],
   )
   .expect("failed to execute init");
 

@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-// TODO: uid_t, gid_t, off_t, pid_t
+// TODO: uid_t, gid_t, pid_t
 
 #include <bits/stddef.h>
 
@@ -17,6 +17,17 @@ extern "C" {
 #endif
 
 typedef __SSIZE_TYPE__ ssize_t;
+
+#endif
+
+#ifndef __CILIBC_OFF_TYPE__
+#define __CILIBC_OFF_TYPE__ 1
+
+#ifndef __OFF_TYPE__
+#define __OFF_TYPE__ __SSIZE_TYPE__
+#endif
+
+typedef __OFF_TYPE__ off_t;
 
 #endif
 

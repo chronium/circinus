@@ -5,9 +5,16 @@
 extern "C" {
 #endif
 
-  #include <stdarg.h>
+#include <stdarg.h>
+#include <bits/sys/types.h>
 
-  typedef struct { int fd; char* buf; } FILE;
+  typedef struct {
+    int fd;
+    char* buf;
+    size_t bufsiz;
+    off_t bufpos;
+    int flags;
+  } FILE;
 
   int puts(const char *s);
 
@@ -17,6 +24,7 @@ extern "C" {
   int vprintf(const char*restrict, va_list);
 
   int fputc(int, FILE *);
+  int fflush(FILE *);
 #define putc(c, stream) fputc(c, stream);
 
 #define EOF 0
@@ -28,6 +36,10 @@ extern "C" {
 #define stdout (__sF[1])
 
 #define BUFSIZ 512
+
+#define _IOFBF 0b00000001
+#define _IOLBF 0b00000010
+#define _IONBF 0b00000100
 
 #if defined(__cplusplus)
 } /* extern "C" */
