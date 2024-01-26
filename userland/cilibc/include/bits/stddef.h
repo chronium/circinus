@@ -16,6 +16,11 @@ typedef __SIZE_TYPE__ size_t;
 
 #endif
 
+#ifndef __CILIBC_NULL__
+#define __CILIBC_NULL__ 1
+#define NULL (void*)0
+#endif
+
 #if defined(__cplusplus)
 } /* extern "C" */
 #endif

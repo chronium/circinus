@@ -1,5 +1,6 @@
 #include "syscall.h"
 #include <stdint.h>
+#include <stdlib.h>
 
 [[ noreturn ]] void exit(int exit_code) {
   extern void _fini();

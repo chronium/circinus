@@ -2,13 +2,6 @@
 #include <string.h>
 #include <unistd.h>
 
-int putchar(int c) {
-  int buf[2];
-  buf[0] = c;
-  write(1, buf, 2);
-  return c;
-}
-
 int printf(const char* fmt, ...) {
   va_list arg; 
 

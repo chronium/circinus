@@ -15,9 +15,10 @@ other_objects = $(sys64)/syscall.o\
 								$(sys)/brk.o\
 								$(string)/strlen.o\
 								$(stdio)/puts.o\
-								$(stdio)/fputc.o\
+								$(stdio)/fops.o\
 								$(stdio)/printf.o\
 								$(stdlib)/mem.o\
+								$(stdlib)/__stdio.o\
 								$(src_dir)/cilibc.o
 objects = $(crt_objects) $(other_objects)
 build_dir = ../sysroot

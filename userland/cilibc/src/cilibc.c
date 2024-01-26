@@ -3,21 +3,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "stdio/__stdio.h"
+
 FILE *__sF[3];
 
 void init_stdlib(int argc, char **argv) {
-  FILE* stdin_file = (FILE*)malloc(sizeof(FILE));
-  FILE* stdout_file = (FILE*)malloc(sizeof(FILE));
-  FILE* stderr_file = (FILE*)malloc(sizeof(FILE));
-
-  stdin_file->fd = STDIN_FILENO;
-  stdin_file->buf = (char*)malloc(BUFSIZ);
-
-  stdout_file->fd = STDOUT_FILENO;
-  stdout_file->buf = (char*)malloc(BUFSIZ);
-
-  stderr_file->fd = STDERR_FILENO;
-  stderr_file->buf = (char*)malloc(BUFSIZ);
+  FILE *stdin_file = __cimakebuf(STDIN_FILENO, _IOLBF, malloc(BUFSIZ));
+  FILE *stdout_file = __cimakebuf(STDOUT_FILENO, _IOLBF, malloc(BUFSIZ));
+  FILE *stderr_file = __cimakebuf(STDERR_FILENO, _IONBF, NULL);
 
   __sF[0] = stdin_file;
   __sF[1] = stdout_file;

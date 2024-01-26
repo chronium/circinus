@@ -9,7 +9,6 @@ extern "C" {
 
 #include <bits/stddef.h>
 
-#define NULL 0
 #define offsetof(type, member) ((size_t)(&((type *)0)->member))
 
 #ifndef __CILIBC_PTRDIFF_TYPE__
