@@ -8,6 +8,11 @@ int main(int argc, char* argv[]) {
 
   printf("Hello %s\n", "printf");
   printf("Numbers! %i\n", 1234);
+
+  printf("\n");
+
+  printf("argc=%d\n", argc); 
+  printf("argv[0]=%s\n", argv[0]);
   
   return 0;
 }

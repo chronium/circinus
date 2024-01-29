@@ -2,22 +2,14 @@
 
 .global _start
 _start:
-  movq $0, %rbp
-  pushq %rbp
-  pushq %rbp
-  movq %rsp, %rbp
-
-  pushq %rsi
-  pushq %rdi
+  mov %rsp, %rbp
 
   call _init
 
+  mov (%rsp), %rdi
+  mov 8(%rsp), %rsi
+  mov 16(%rsp), %rdx
   call init_stdlib
-
-  popq %rdi
-  popq %rsi
-
-  call main
 
   movl %eax, %edi
   call exit
