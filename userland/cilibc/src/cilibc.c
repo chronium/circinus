@@ -7,13 +7,18 @@
 
 FILE *__sF[3];
 
-void init_stdlib(int argc, char **argv) {
+extern int main(int argc, char **argv);
+
+int init_stdlib(int argc, char *argv) {
   FILE *stdin_file = __cimakestream(STDIN_FILENO, _IOLBF);
   FILE *stdout_file = __cimakestream(STDOUT_FILENO, _IOLBF);
   FILE *stderr_file = __cimakestream(STDERR_FILENO, _IONBF);
+
   __sF[0] = stdin_file;
   __sF[1] = stdout_file;
   __sF[2] = stderr_file;
+
+  return main(argc, &argv);;
 }
 
 int liballoc_lock() {

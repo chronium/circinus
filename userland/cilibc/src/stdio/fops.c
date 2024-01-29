@@ -35,3 +35,7 @@ int fputs(const char *restrict s, FILE *restrict stream) {
 
   return p - s;
 }
+
+int putchar(int c) {
+  return fputc(c, stdout);
+}

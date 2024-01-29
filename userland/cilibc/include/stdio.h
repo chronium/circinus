@@ -23,6 +23,7 @@ extern "C" {
   int printf(const char *restrict, ...);
   int vprintf(const char*restrict, va_list);
 
+  int putchar(int);
   int fputc(int, FILE *);
   int fputs(const char *restrict, FILE *restrict);
 
