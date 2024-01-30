@@ -14,6 +14,7 @@ other_objects = $(sys64)/syscall.o\
 								$(sys)/write.o\
 								$(sys)/brk.o\
 								$(string)/strlen.o\
+								$(string)/memset.o\
 								$(stdio)/puts.o\
 								$(stdio)/fops.o\
 								$(stdio)/printf.o\

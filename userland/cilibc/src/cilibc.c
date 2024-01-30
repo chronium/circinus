@@ -1,4 +1,5 @@
 #include <stddef.h>
+#include <string.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,7 +19,15 @@ int init_stdlib(int argc, char *argv) {
   __sF[1] = stdout_file;
   __sF[2] = stderr_file;
 
-  return main(argc, &argv);;
+  char *resolved_argv[argc] = {};
+  size_t next = 0;
+  resolved_argv[0] = argv;
+  for (int i = 1; i < argc; i++) {
+    next += strlen(resolved_argv[i - 1]);
+    resolved_argv[i] = argv + next;
+  }
+
+  return main(argc, resolved_argv);
 }
 
 int liballoc_lock() {
