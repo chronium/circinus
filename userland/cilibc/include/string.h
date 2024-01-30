@@ -8,6 +8,8 @@ extern "C" {
 #include <stddef.h>
 
   size_t strlen(const char *s);
+  
+  void *memset(void*, int, size_t);
 
 #if defined(__cplusplus)
 } /* extern "C" */
