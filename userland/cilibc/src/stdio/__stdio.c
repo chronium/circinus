@@ -1,5 +1,6 @@
 #include "__stdio.h"
-
+#include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 int isatty(int fd) {
@@ -9,6 +10,7 @@ int isatty(int fd) {
 FILE *__cimakestream(int fd, int flags) {
   FILE *f = (FILE *)malloc(sizeof(FILE));
   f->flags = flags;
+  f->fd = fd;
 
   return __cimakebuf(f);
 }
@@ -25,7 +27,9 @@ FILE *__cimakebuf(FILE *stream) {
   stream->bufsiz = BUFSIZ;
 
   if (isatty(stream->fd))
-    stream->flags = (stream->flags & ~_IONBF) | _IOLBF;
+    stream->flags = (stream->flags & ~(_IONBF | _IOFBF | _IOLBF)) | _IOLBF;
+  else
+    stream->flags = (stream->flags & ~(_IONBF | _IOFBF | _IOLBF)) | _IOFBF; 
 
   return stream; 
 }

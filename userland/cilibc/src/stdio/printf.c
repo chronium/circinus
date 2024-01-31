@@ -77,6 +77,10 @@ static inline int vprint_d(int arg) {
   return puts(buf);
 }
 
+static inline int vprint_c(int c) {
+  return putchar(c);
+}
+
 static inline int vprint_s(const char* s) {
   return puts(s);
 }
@@ -96,6 +100,9 @@ int vprintf(const char* fmt, va_list arg) {
       s = fmt[++i];
       
       switch (s) {
+        case 'c':
+          written_len += vprint_c(va_arg(arg, int));
+          break;
         case 'd':
         case 'i':
           written_len += vprint_d(va_arg(arg, int));
