@@ -9,7 +9,9 @@ extern "C" {
 
   size_t strlen(const char *s);
   
-  void *memset(void*, int, size_t);
+  void *memset(void *, int, size_t);
+
+  char *strchr(const char *, int);
 
 #if defined(__cplusplus)
 } /* extern "C" */

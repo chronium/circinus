@@ -28,6 +28,13 @@ extern "C" {
   int fputs(const char *restrict, FILE *restrict);
 
   int fflush(FILE *);
+
+  FILE *fopen(const char *restrict, const char *restrict);
+  int fclose(FILE *);
+
+  int getc(FILE *);
+  char *gets(FILE *);
+
 #define putc(c, stream) fputc(c, stream);
 
 #define EOF 0
