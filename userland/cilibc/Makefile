@@ -5,6 +5,7 @@ sys = $(src_dir)/sys
 sys64 = $(sys)/x86_64
 string = $(src_dir)/string
 stdio = $(src_dir)/stdio
+fcntl = $(src_dir)/fcntl
 stdlib = $(src_dir)/stdlib
 
 crt_objects = $(sys64)/crt0.o $(sys64)/crti.o $(sys64)/crtn.o
@@ -13,12 +14,16 @@ other_objects = $(sys64)/syscall.o\
 								$(sys)/exit.o\
 								$(sys)/write.o\
 								$(sys)/brk.o\
+								$(sys)/read.o\
 								$(string)/strlen.o\
 								$(string)/memset.o\
+								$(string)/strchr.o\
 								$(stdio)/puts.o\
 								$(stdio)/fops.o\
+								$(fcntl)/fcntl.o\
 								$(stdio)/printf.o\
 								$(stdlib)/mem.o\
+								$(stdlib)/stdlib.o\
 								$(stdio)/__stdio.o\
 								$(src_dir)/cilibc.o
 objects = $(crt_objects) $(other_objects)

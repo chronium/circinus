@@ -91,8 +91,6 @@ int vprintf(const char* fmt, va_list arg) {
   char ch;
   char s;
 
-  char buf[2];
-
   for (int i = 0; i < fmt_length; i++) {
     ch = fmt[i];
 
@@ -116,9 +114,7 @@ int vprintf(const char* fmt, va_list arg) {
 
     } else {
       written_len++;
-      buf[0] = fmt[i];
-      buf[1] = 0;
-      puts(buf);
+      putchar(ch);
     }
   }
 

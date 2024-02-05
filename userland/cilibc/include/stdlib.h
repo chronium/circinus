@@ -17,6 +17,10 @@ void free(void *);
 
 void *realloc(void*, size_t);
 
+int abs(int);
+long labs(long);
+long long llabs(long long);
+
 [[noreturn]] void exit(int);
 
 #if defined(__cplusplus)

@@ -14,6 +14,7 @@ extern "C" {
 
 #define SYS_EXIT -1
 #define SYS_WRITE 1
+#define SYS_READ 2
 #define SYS_OPEN 4
 #define SYS_CLOSE 8
 #define SYS_BRK 128
