@@ -1,26 +1,29 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include <fcntl.h>
-#include <unistd.h>
+#include <font.h>
 #include <framebuffer.h>
 #include <math/rect.h>
-#include <font.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #include <widget/sl_element.h>
 
-//#define BASE 0xFFdb9834
-//#define LIGHT 0xFFe2ad5d
-//#define DARK 0xFFc1862e
+// #define BASE 0xFFdb9834
+// #define LIGHT 0xFFe2ad5d
+// #define DARK 0xFFc1862e
 
 #define BASE 0xFF8d8c7f
 #define LIGHT 0xFFa6a595
 #define DARK 0xFF7c7b70
 
-#define TEXT 0xFF000000
+//#define TEXT 0xFF000000
+#define TEXT 0xFFFFFFFF
 #define DISABLED 0xFF6B6B6B
 
 #define EDGE 3
 
-void draw_button(framebuffer_t *fb, ssize_t x, ssize_t y, ssize_t width, ssize_t height) {
+void draw_button(framebuffer_t *fb, ssize_t x, ssize_t y, ssize_t width,
+                 ssize_t height) {
 
   fb_fillrect(fb, x, y, width, height, BASE);
   fb_fillrect(fb, x, y, EDGE, height, LIGHT);
@@ -29,21 +32,31 @@ void draw_button(framebuffer_t *fb, ssize_t x, ssize_t y, ssize_t width, ssize_t
   fb_fillrect(fb, x + width - EDGE, y + EDGE, EDGE, height - EDGE * 2, DARK);
 }
 
-SlElement *slMakeBase(SlElement *elem, SlElementKind kind, SlDrawFunction draw) {
+SlElement *slMakeBase(SlElement *elem, SlElementKind kind,
+                      SlDrawFunction draw) {
   elem->kind = kind;
   elem->draw = draw;
+  elem->children_count = 0;
 
   return elem;
 }
 
-void drawWindow(framebuffer_t *fb, font_t *font, SlElement *elem) {
-  if (elem->kind != SL_WINDOW) return;
+void drawWindow(SlElement *elem, rect_t *parent, framebuffer_t *fb, font_t *font) {
+  if (elem->kind != SL_WINDOW)
+    return;
+  SlWindow *wnd = (SlWindow *)elem;
 
-  SlWindow *wnd = (SlWindow *)wnd;
+  rect_t dst = {
+    parent->x + elem->rect.x,
+    parent->y + elem->rect.y,
+    elem->rect.width,
+    elem->rect.height
+  };
 
-  trishade_rect(fb, &elem->rect, EDGE, LIGHT, BASE, DARK);
+  trishade_rect(fb, &dst, EDGE, LIGHT, BASE, DARK);
 
-  blit_string(font, wnd->title, elem->rect.x + EDGE + EDGE, elem->rect.y + EDGE + EDGE, TEXT, fb);
+  blit_string(font, wnd->title, dst.x + EDGE + EDGE,
+              dst.y + EDGE + EDGE, TEXT, fb);
 }
 
 SlWindow *makeWindow(char *title) {
@@ -65,51 +78,115 @@ SlElement *_slResize(SlElement *elem, ssize_t width, ssize_t height) {
 SlElement *_slReposition(SlElement *elem, ssize_t x, ssize_t y) {
   elem->rect.x = x;
   elem->rect.y = y;
-  
+
   return elem;
 }
 
-int main(int argc, char *argv[]) {
-  int fb_fd = open(FB_DEVICE, O_RDWR);
-
-  if (fb_fd < 0) {
-    printf("Could not open " FB_DEVICE "\n");
-    return EXIT_FAILURE;
+void _addChild(SlElement *parent, SlElement *child) {
+  if (parent->children == NULL) {
+    parent->children = malloc(sizeof(SlElement *));
   }
 
-  framebuffer_t *fb = fb_open(FB_DEVICE);
+  size_t new_count = parent->children_count + 1;
+  parent->children = realloc(parent->children, new_count * sizeof(SlElement *));
 
+  parent->children[parent->children_count] = child;
+  parent->children_count = new_count;
+}
+
+void drawLabel(SlElement *elem, rect_t *parent, framebuffer_t *fb, font_t *font) {
+  if (elem->kind != SL_LABEL) return;
+  SlLabel *lbl = (SlLabel *)elem;
+
+  rect_t dst = {
+    parent->x + elem->rect.x,
+    parent->y + elem->rect.y,
+    elem->rect.width,
+    elem->rect.height
+  };
+
+  blit_string(font, lbl->text, dst.x, dst.y, TEXT, fb);
+}
+
+SlLabel *makeLabel(char *text, font_t *font) {
+  SlLabel *lbl = (SlLabel *)malloc(sizeof(SlLabel));
+  lbl->text = text;
+
+  slMakeBase(&lbl->base, SL_LABEL, drawLabel);
+  slResize(lbl, font->width * strlen(text), font->height);
+
+  return lbl;
+}
+
+void _slDraw(SlElement *elem, rect_t *parent, framebuffer_t *fb, font_t *font) {
+  elem->draw(elem, parent, fb, font);
+
+  for (int i = 0; i < elem->children_count; i++)
+    elem->children[i]->draw(elem->children[i], &elem->rect, fb, font);
+}
+
+
+void drawButton(SlElement *elem, rect_t *parent, framebuffer_t *fb, font_t *font) {
+  if (elem->kind != SL_BUTTON) return;
+  SlButton *btn = (SlButton *)elem;
+
+  rect_t dst = {
+    parent->x + elem->rect.x,
+    parent->y + elem->rect.y,
+    elem->rect.width,
+    elem->rect.height
+  };
+
+  if (!btn->disabled) {
+    trishade_rect(fb, &dst, EDGE, LIGHT, BASE, DARK);
+    blit_string(font, btn->text, dst.x + EDGE * 2, dst.y + EDGE * 2, TEXT, fb); 
+  } else {
+    trishade_rect(fb, &dst, EDGE, DARK, BASE, LIGHT);
+    blit_string(font, btn->text, dst.x + EDGE * 2, dst.y + EDGE * 2, DISABLED, fb); 
+  }
+}
+
+SlButton *makeButton(char *text, font_t *font) {
+  SlButton *btn = (SlButton *)malloc(sizeof(SlButton));
+  btn->text = text;
+  btn->disabled = 0;
+
+  slMakeBase(&btn->base, SL_BUTTON, drawButton);
+  slResize(btn, font->width * strlen(text) + EDGE * 2, font->height + EDGE * 4);
+
+  return btn;
+}
+
+int main(int argc, char *argv[]) {
+  framebuffer_t *fb = fb_open(FB_DEVICE);
   printf("width = %d, height = %d\n", fb->info.width, fb->info.height);
 
   font_t *font = font_open(BIZCAT);
+  printf("font_width = %d, font_height = %d, stride = %d, max_glyph = %d\n",
+         font->width, font->height, font->stride, font->max_glyph);
 
-  printf("font_width = %d, font_height = %d, stride = %d, max_glyph = %d\n", font->width, font->height, font->stride, font->max_glyph);
-
-  draw_button(fb, 100, 100, 60, 40);
-  draw_button(fb, 250, 120, 100, 30);
-  draw_button(fb, 120, 250, 120, 60);
- 
   SlWindow *wnd = makeWindow("Test Window");
   slReposition(wnd, 300, 300);
   slResize(wnd, 320, 200);
 
-  rect_t rect = wnd->base.rect;
-  ssize_t btn_w = 80;
-  ssize_t btn_h = 30;
-  rect_t ok = { rect.x + rect.width - 16 - btn_w, rect.y + rect.height - 16 - btn_h, btn_w, btn_h };
-  rect_t cancel = { rect.x + rect.width - 16 - btn_w - 16 - btn_w, rect.y + rect.height - 16 - btn_h, btn_w, btn_h };
+  SlLabel *lbl = makeLabel("I'm a label!", font);
+  slReposition(lbl, 30, 50);
 
-  slDraw(wnd, fb, font);
+  addChild(wnd, lbl);
 
-  trishade_rect(fb, &ok, 3, LIGHT, BASE, DARK);
-  trishade_rect(fb, &cancel, 3, DARK, BASE, LIGHT);
+  SlButton *btn_enabled = makeButton("I'm a button!", font);
+  SlButton *btn_disabled = makeButton("I'm disabled!", font);
+  btn_disabled->disabled = 1;
 
-  blit_char(font, 'A', 100, 100, 0xFF0000FF, fb);
-  
-  blit_string(font, "Hello World!", 100, 125, 0xFF0000FF, fb);
+  slReposition(btn_enabled, 30, 80);
+  slReposition(btn_disabled, 30, 120);
 
-  blit_string(font, "Cancel", cancel.x + 18, cancel.y + 7, DISABLED, fb);
-  blit_string(font, "Ok", ok.x + 32, ok.y + 7, TEXT, fb);
+  addChild(wnd, btn_enabled);
+  addChild(wnd, btn_disabled);
+
+  rect_t zero = { 0, 0, 0, 0 };
+
+  slDraw(wnd, &zero, fb, font);
 
   fb_swap(fb);
 
