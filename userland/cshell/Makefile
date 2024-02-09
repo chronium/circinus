@@ -1,6 +1,6 @@
-export CC?=x86_64-elf-gcc
+CC=x86_64-unknown-circinus-gcc
 
-export TARGET?=x86_64-unknown-circinus
+TARGET=x86_64-unknown-circinus
 
 CFLAGS?=\
 	-std=c11 \
@@ -9,16 +9,9 @@ CFLAGS?=\
 	-Wall \
 	-g \
 	-I . \
-	-static \
-	-nostdinc \
-	-nostdlib \
-	-isystem ../sysroot/include
+	-static
 
-LDFLAGS?=\
-	../sysroot/lib/crt0.o \
-	../sysroot/lib/crti.o \
-	../sysroot/lib/crtn.o \
-	../sysroot/lib/libc.a
+LDFLAGS?=
 
 FILES=\
 	main.o

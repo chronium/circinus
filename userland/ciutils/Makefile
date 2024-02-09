@@ -1,7 +1,7 @@
-export CC?=x86_64-elf-gcc
-export TARGET?=x86_64-unknown-circinus
+CC:=x86_64-elf-gcc
+TARGET:=x86_64-unknown-circinus
 
-export CFLAGS?=\
+export CFLAGS=\
 	-std=c11 \
 	-fno-builtin \
 	-fno-stack-protector \
@@ -13,7 +13,7 @@ export CFLAGS?=\
 	-nostdlib \
 	-isystem ../../sysroot/include
 
-export LDFLAGS?=\
+export LDFLAGS=\
 	../../sysroot/lib/crt0.o \
 	../../sysroot/lib/crti.o \
 	../../sysroot/lib/crtn.o \

@@ -1,13 +1,12 @@
 #ifndef _CILIBC_STDINT_H
 #define _CILIBC_STDINT_H 1
 
-
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
-  typedef unsigned long int uintptr_t;
-  typedef long int intptr_t;
+typedef unsigned long int uintptr_t;
+typedef long int intptr_t;
 
 #ifndef __CILIBC__UINT8_TYPE__
 #define __CILIBC__UINT8_TYPE__ 1

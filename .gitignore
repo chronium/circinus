@@ -22,3 +22,10 @@ virtio-net.pcap
 **/bins_static/**
 
 **/bins/**
+
+*.swp
+**/*.swp
+
+**/.cmake
+
+**/cmake-build-debug

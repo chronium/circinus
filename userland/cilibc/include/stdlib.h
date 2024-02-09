@@ -14,13 +14,8 @@ extern "C" {
 
 void *malloc(size_t);
 void free(void *);
-void *calloc(size_t, size_t);
 
-void *realloc(void*, size_t);
-
-int abs(int);
-long labs(long);
-long long llabs(long long);
+void *realloc(void *, size_t);
 
 [[noreturn]] void exit(int);
 
