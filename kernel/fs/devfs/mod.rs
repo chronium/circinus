@@ -1,7 +1,7 @@
 use alloc::sync::Arc;
 use api::{
-	vfs::{self, File},
-	Result,
+  vfs::{self, File},
+  Result,
 };
 use tempfs::Tempfs;
 use utils::once::Once;
@@ -47,13 +47,13 @@ impl Devfs {
 }
 
 impl vfs::Filesystem for Devfs {
-	fn root(&self) -> Result<Arc<dyn vfs::Directory>> {
-		vfs::Filesystem::root(&self.0)
-	}
+  fn root(&self) -> Result<Arc<dyn vfs::Directory>> {
+    vfs::Filesystem::root(&self.0)
+  }
 }
 
 pub fn init() {
-	DEVFS.init(|| Arc::new(Devfs::new()));
+  DEVFS.init(|| Arc::new(Devfs::new()));
 }
 
 pub mod devconsole;

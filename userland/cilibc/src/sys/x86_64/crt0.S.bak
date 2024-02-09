@@ -1,0 +1,30 @@
+.section .text
+
+.global _start
+_start:
+  movq $0, %rbp
+  pushq %rbp
+  pushq %rbp
+  movq %rsp, %rbp
+
+  pushq %rsi
+  pushq %rdi
+
+  call _init
+
+  call init_stdlib
+
+  popq %rdi
+  popq %rsi
+
+  mov (%rsp), %edi
+  lea 8(%rsp), %rsi
+  lea 16(%rsp, %rdi, 8), %rdx
+  xor %eax, %eax
+
+  call main
+
+  movl %eax, %edi
+  call exit
+
+.size _start, . - _start

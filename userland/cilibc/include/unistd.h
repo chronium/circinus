@@ -7,8 +7,10 @@ extern "C" {
 
 #include <bits/sys/types.h>
 
-  ssize_t write(int fd, const void* buf, size_t count);
-  void* brk(void* addr);
+ssize_t write(int fd, const void *buf, size_t count);
+ssize_t read(int fd, void *, size_t);
+
+void *brk(void *addr);
 
 #define STDERR_FILENO 2
 #define STDIN_FILENO 0

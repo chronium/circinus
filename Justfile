@@ -16,7 +16,7 @@ virtio-blk := "virtio-blk-pci,drive=dsk0,disable-legacy=on,disable-modern=off"
 
 # qemu-args := " -serial stdio" + " -m " + mem + " -drive " + drive + " -no-reboot -d cpu_reset -s" + " -netdev " + dev + " -object " + pcap + " -device " + virtio-blk
 #
-qemu-args := " -serial stdio" + " -m " + mem + " -drive " + drive + " -no-reboot -d cpu_reset -s" + " -device " + virtio-net + " -netdev " + dev + " -object " + pcap + " -device " + virtio-blk
+qemu-args := " -serial stdio" + " -m " + mem + " -drive " + drive + " -no-reboot -d cpu_reset -s" + " -device " + virtio-net + " -netdev " + dev + " -object " + pcap + " -device " + virtio-blk + " 2>/dev/null"
 
 limine := "extern/limine/build/bin"
 
@@ -41,25 +41,30 @@ build init release:
     just build {{init}} circinus
     popd
 
-    just build_kern {{init}} {{release}}
+    just build_kern {{init}} {{release}} false
 
-build_kern init release:
+build_kern init release silent:
     #!/usr/bin/env bash
     set -e
     export INIT_FILE={{init}}
-    if { [ release != "debug" ] && [ release != "release" ] ;} then \
+    if { [ {{release}} != "debug" ] && [ {{release}} != "release" ] ;} then \
         echo Unknown build mode \"{{release}}\";\
         exit 1; \
     fi;
 
-    cargo -Z build-std=core,alloc -Z build-std-features=compiler-builtins-mem build --target kernel/arch/x64/x64.json {{ if release == "debug" { "" } else { "--release" } }}
+    if [ {{silent}} != "false" ]; then \
+      cargo -Z build-std=core,alloc -Z build-std-features=compiler-builtins-mem build --target kernel/arch/x64/x64.json {{ if release == "debug" { "" } else { "--release" } }} 2>/dev/null; \
+    else \
+      cargo -Z build-std=core,alloc -Z build-std-features=compiler-builtins-mem build --target kernel/arch/x64/x64.json {{ if release == "debug" { "" } else { "--release" } }};
+    fi;
+
     cp target/{{target}}/{{release}}/kernel build/kernel.elf
 
     nm build/kernel.elf | rustfilt | awk '{ $2=""; print $0 }' > build/kernel.sym
     python3 ./embed-symbol-table.py build/kernel.sym build/kernel.elf
 
 image name:
-    #!/usr/bin/env sh
+    #!/usr/bin/env bash
     set -e
     path="build/{{name}}"
 
@@ -119,8 +124,8 @@ run_gdb init="init" release="release": (build init release) (image img)
 kvm init="init" release="release": (build init release) (image img)
     sudo qemu-system-{{qemutarget}} -enable-kvm -cpu host {{qemu-args}}
 
-run_file file release="release": (build_kern file release) (image img)
-  qemu-system-{{qemutarget}} -cpu Haswell {{qemu-args}}
+run_file file silent="false" release="release": (build_kern file release silent) (image img)
+    qemu-system-{{qemutarget}} -cpu Haswell {{qemu-args}}
 
 qemu init="init" release="release": (image img)
     qemu-system-{{qemutarget}} -cpu Haswell {{qemu-args}}
