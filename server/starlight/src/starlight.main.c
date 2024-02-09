@@ -16,7 +16,7 @@
 #define LIGHT 0xFFa6a595
 #define DARK 0xFF7c7b70
 
-//#define TEXT 0xFF000000
+// #define TEXT 0xFF000000
 #define TEXT 0xFFFFFFFF
 #define DISABLED 0xFF6B6B6B
 
@@ -41,22 +41,19 @@ SlElement *slMakeBase(SlElement *elem, SlElementKind kind,
   return elem;
 }
 
-void drawWindow(SlElement *elem, rect_t *parent, framebuffer_t *fb, font_t *font) {
+void drawWindow(SlElement *elem, rect_t *parent, framebuffer_t *fb,
+                font_t *font) {
   if (elem->kind != SL_WINDOW)
     return;
   SlWindow *wnd = (SlWindow *)elem;
 
-  rect_t dst = {
-    parent->x + elem->rect.x,
-    parent->y + elem->rect.y,
-    elem->rect.width,
-    elem->rect.height
-  };
+  rect_t dst = {parent->x + elem->rect.x, parent->y + elem->rect.y,
+                elem->rect.width, elem->rect.height};
 
   trishade_rect(fb, &dst, EDGE, LIGHT, BASE, DARK);
 
-  blit_string(font, wnd->title, dst.x + EDGE + EDGE,
-              dst.y + EDGE + EDGE, TEXT, fb);
+  blit_string(font, wnd->title, dst.x + EDGE + EDGE, dst.y + EDGE + EDGE, TEXT,
+              fb);
 }
 
 SlWindow *makeWindow(char *title) {
@@ -94,16 +91,14 @@ void _addChild(SlElement *parent, SlElement *child) {
   parent->children_count = new_count;
 }
 
-void drawLabel(SlElement *elem, rect_t *parent, framebuffer_t *fb, font_t *font) {
-  if (elem->kind != SL_LABEL) return;
+void drawLabel(SlElement *elem, rect_t *parent, framebuffer_t *fb,
+               font_t *font) {
+  if (elem->kind != SL_LABEL)
+    return;
   SlLabel *lbl = (SlLabel *)elem;
 
-  rect_t dst = {
-    parent->x + elem->rect.x,
-    parent->y + elem->rect.y,
-    elem->rect.width,
-    elem->rect.height
-  };
+  rect_t dst = {parent->x + elem->rect.x, parent->y + elem->rect.y,
+                elem->rect.width, elem->rect.height};
 
   blit_string(font, lbl->text, dst.x, dst.y, TEXT, fb);
 }
@@ -122,29 +117,33 @@ void _slDraw(SlElement *elem, rect_t *parent, framebuffer_t *fb, font_t *font) {
   elem->draw(elem, parent, fb, font);
 
   for (int i = 0; i < elem->children_count; i++)
-    elem->children[i]->draw(elem->children[i], &elem->rect, fb, font);
+    _slDraw(elem->children[i], &elem->rect, fb, font);
 }
 
-
-void drawButton(SlElement *elem, rect_t *parent, framebuffer_t *fb, font_t *font) {
-  if (elem->kind != SL_BUTTON) return;
+void drawButton(SlElement *elem, rect_t *parent, framebuffer_t *fb,
+                font_t *font) {
+  if (elem->kind != SL_BUTTON)
+    return;
   SlButton *btn = (SlButton *)elem;
 
-  rect_t dst = {
-    parent->x + elem->rect.x,
-    parent->y + elem->rect.y,
-    elem->rect.width,
-    elem->rect.height
-  };
+  rect_t dst = {parent->x + elem->rect.x, parent->y + elem->rect.y,
+                elem->rect.width, elem->rect.height};
 
   if (!btn->disabled) {
     trishade_rect(fb, &dst, EDGE, LIGHT, BASE, DARK);
-    blit_string(font, btn->text, dst.x + EDGE * 2, dst.y + EDGE * 2, TEXT, fb); 
+    blit_string(font, btn->text, dst.x + EDGE * 2, dst.y + EDGE * 2, TEXT, fb);
   } else {
     trishade_rect(fb, &dst, EDGE, DARK, BASE, LIGHT);
-    blit_string(font, btn->text, dst.x + EDGE * 2, dst.y + EDGE * 2, DISABLED, fb); 
+    blit_string(font, btn->text, dst.x + EDGE * 2, dst.y + EDGE * 2, DISABLED,
+                fb);
   }
 }
+
+struct MousePacket {
+  int16_t dX;
+  int16_t dY;
+  int8_t buttons;
+};
 
 SlButton *makeButton(char *text, font_t *font) {
   SlButton *btn = (SlButton *)malloc(sizeof(SlButton));
@@ -165,9 +164,20 @@ int main(int argc, char *argv[]) {
   printf("font_width = %d, font_height = %d, stride = %d, max_glyph = %d\n",
          font->width, font->height, font->stride, font->max_glyph);
 
+  int mouse = open("/Devices/Mouse/", O_RDONLY);
+  if (mouse < 1) {
+    printf("Could not open /Devices/Mouse");
+  }
+
+  SlWindow *desk = makeWindow("Desktop");
+  slReposition(desk, 0, 0);
+  slResize(desk, fb->info.width, fb->info.height);
+
   SlWindow *wnd = makeWindow("Test Window");
   slReposition(wnd, 300, 300);
   slResize(wnd, 320, 200);
+
+  addChild(desk, wnd); 
 
   SlLabel *lbl = makeLabel("I'm a label!", font);
   slReposition(lbl, 30, 50);
@@ -184,11 +194,33 @@ int main(int argc, char *argv[]) {
   addChild(wnd, btn_enabled);
   addChild(wnd, btn_disabled);
 
-  rect_t zero = { 0, 0, 0, 0 };
+  rect_t zero = {0, 0, 0, 0};
 
-  slDraw(wnd, &zero, fb, font);
+  struct MousePacket packet;
 
-  fb_swap(fb);
+  SlLabel *ml = makeLabel("MOUSE!!!", font);
+  ssize_t mx, my = 0;
+
+  while (1) {
+    ssize_t size = read(mouse, &packet, sizeof(struct MousePacket));
+
+    if (size != 0) {
+      mx += packet.dX;
+      my += -packet.dY;
+
+      if (mx < 0) mx = 0;
+      if (my < 0) my = 0;
+      if (mx >= fb->info.width) mx = fb->info.width;
+      if (my >= fb->info.height) my = fb->info.height;
+
+      slReposition(ml, mx, my);
+    }
+    
+    slDraw(desk, &zero, fb, font);
+    slDraw(ml, &zero, fb, font);
+
+    fb_swap(fb);
+  }
 
   return 0;
 }
