@@ -10,48 +10,52 @@ pub const PS2KBD_IRQ: u8 = 1;
 const DATA_PORT: u16 = 0x60;
 
 pub struct PS2Kbd {
-	data_port: u16,
-	irq: u8,
+  data_port: u16,
+  irq: u8,
 }
 
 pub static PS2KBD: PS2Kbd = PS2Kbd::new(DATA_PORT, PS2KBD_IRQ);
 
 impl PS2Kbd {
-	const fn new(data_port: u16, irq: u8) -> Self {
-		Self { data_port, irq }
-	}
+  const fn new(data_port: u16, irq: u8) -> Self {
+    Self { data_port, irq }
+  }
 
-	pub fn read_scancode(&self) -> u8 {
-		unsafe { inb(self.data_port) }
-	}
+  pub fn read_scancode(&self) -> u8 {
+    unsafe { inb(self.data_port) }
+  }
 
-	pub fn irq(&self) -> u8 {
-		self.irq
-	}
+  pub fn irq(&self) -> u8 {
+    self.irq
+  }
 }
 
 lazy_static! {
-	static ref KEYBOARD: Mutex<Keyboard<layouts::Us104Key, ScancodeSet1>> =
-		Mutex::new(Keyboard::new(HandleControl::Ignore));
+  static ref KEYBOARD: Mutex<Keyboard<layouts::Us104Key, ScancodeSet1>> =
+    Mutex::new(Keyboard::new(
+      ScancodeSet1::new(),
+      layouts::Us104Key,
+      HandleControl::Ignore
+    ));
 }
 
 pub(crate) fn ps2kbd_irq_handler() {
-	let scancode = PS2KBD.read_scancode();
+  let scancode = PS2KBD.read_scancode();
 
-	let mut keyboard = KEYBOARD.lock();
+  let mut keyboard = KEYBOARD.lock();
 
-	if let Ok(Some(key_event)) = keyboard.add_byte(scancode) {
-		if let Some(key) = keyboard.process_keyevent(key_event) {
-			match key {
-				DecodedKey::Unicode(character) => {
-					system().on_console_rx(character as u8);
-				}
-				DecodedKey::RawKey(_key) => {} // system().on_console_rx(key),
-			}
-		}
-	}
+  if let Ok(Some(key_event)) = keyboard.add_byte(scancode) {
+    if let Some(key) = keyboard.process_keyevent(key_event) {
+      match key {
+        DecodedKey::Unicode(character) => {
+          system().on_console_rx(character as u8);
+        }
+        DecodedKey::RawKey(_key) => {} // system().on_console_rx(key),
+      }
+    }
+  }
 }
 
 pub fn init() {
-	enable_irq(PS2KBD.irq());
+  enable_irq(PS2KBD.irq());
 }

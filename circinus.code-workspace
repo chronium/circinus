@@ -16,6 +16,9 @@
     "editor.tabSize": 2,
     "editor.insertSpaces": true,
     "C_Cpp.clang_format_style": "LLVM",
-    "C_Cpp.enhancedColorization": "enabled"
+    "C_Cpp.enhancedColorization": "enabled",
+    "rust-analyzer.cargo.cfgs": {
+      "target_arch": "x86_64",
+    }
   }
 }

@@ -38,6 +38,8 @@ use crate::{
   fs::devfs::{self, DEVFS},
   process::switch,
 };
+#[cfg(target_arch = "x86_64")]
+use ps2_mouse::MouseState;
 
 struct System;
 
@@ -87,6 +89,12 @@ impl environment::System for System {
     // We should not hold the vm lock since we'll try to acquire it in the
     // page fault handler when copying caused a page fault.
     debug_assert!(!current_process().vm().as_ref().unwrap().is_locked());
+  }
+
+  #[cfg(target_arch = "x86_64")]
+  fn on_mouse_event(&self, mouse_state: MouseState) {
+    use fs::devfs::MOUSE_FILE;
+    MOUSE_FILE.push(mouse_state);
   }
 }
 

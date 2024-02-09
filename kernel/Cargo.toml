@@ -11,9 +11,9 @@ path = "main.rs"
 [dependencies]
 x86 = "0.52.0"
 log = "0.4.17"
-vte = "0.12.0"
+vte = "0.13.0"
 spin = "0.9.3"
-owo-colors = "3.4.0"
+owo-colors = "4.0.0"
 atomic_refcell = "0.1.8"
 
 goblin = { version = "0.7.1", default-features = false, features = ["elf64"] }
@@ -34,3 +34,8 @@ tempfs = { path = "../extensions/tempfs" }
 
 virtio_net = { path = "../extensions/virtio_net" }
 virtio_blk = { path = "../extensions/virtio_blk" }
+
+[target.'cfg(target_arch = "x86_64")'.dependencies]
+ps2-mouse = "0.1.4"
+
+ringbuf = { version = "0.3.3", default-features = false, features = ["alloc"] }
