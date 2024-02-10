@@ -13,7 +13,7 @@ extern "C" {
 #define __CILIBC_SSIZE_TYPE__ 1
 
 #ifndef __SSIZE_TYPE__
-#define __SSIZE_TYPE__ long int
+#define __SSIZE_TYPE__ long long
 #endif
 
 typedef __SSIZE_TYPE__ ssize_t;

@@ -1,5 +1,5 @@
 use api::{
-  ctypes::{c_int, c_size},
+  ctypes::{c_clockid, c_int, c_size},
   io::OpenFlags,
   kernel::KernelOps,
   process::Pid,
@@ -28,6 +28,8 @@ const SYS_CLOSE: usize = 8;
 const SYS_GETDENTS64: usize = 9;
 const SYS_FCNTL: usize = 10;
 const SYS_LSEEK: usize = 11;
+const SYS_CLOCK_GETTIME: usize = 12;
+const SYS_CLOCK_NANOSLEEP: usize = 13;
 const SYS_WAIT4: usize = 126;
 const SYS_FORK: usize = 127;
 const SYS_BRK: usize = 128;
@@ -104,6 +106,13 @@ impl<'a> SyscallHandler<'a> {
       SYS_GETDENTS64 => self.sys_getdents64(Fd::new(a1 as i32), UserVAddr::new_nonnull(a2)?, a3),
       SYS_FCNTL => self.sys_fcntl(Fd::new(a1 as i32), a2 as c_int, a3),
       SYS_LSEEK => self.sys_lseek(Fd::new(a1 as i32), a2 as isize, a3 as isize),
+      SYS_CLOCK_GETTIME => self.sys_clock_gettime(a1 as c_clockid, UserVAddr::new_nonnull(a2)?),
+      SYS_CLOCK_NANOSLEEP => self.sys_clock_nanosleep(
+        a1 as c_clockid,
+        a2 as c_int,
+        UserVAddr::new_nonnull(a3)?,
+        UserVAddr::new(a4),
+      ),
       SYS_WAIT4 => self.sys_wait4(
         Pid::new(a1 as i32),
         UserVAddr::new(a2),
@@ -136,6 +145,8 @@ fn syscall_name_by_number(n: usize) -> &'static str {
     9 => "getdents64",
     10 => "fcntl",
     11 => "lseek",
+    12 => "clock_gettime",
+    13 => "clock_nanosleep",
     126 => "wait4",
     127 => "fork",
     128 => "brk",
@@ -146,6 +157,8 @@ fn syscall_name_by_number(n: usize) -> &'static str {
 
 pub(self) mod brk;
 pub(self) mod chdir;
+pub(self) mod clock_gettime;
+pub(self) mod clock_nanosleep;
 pub(self) mod close;
 pub(self) mod execve;
 pub(self) mod exit;

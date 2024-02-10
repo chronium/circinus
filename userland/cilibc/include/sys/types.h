@@ -6,6 +6,7 @@
 #endif
 
 #include <bits/sys/types.h>
+#include <bits/sys/time.h>
 
 #if defined(__cplusplus)
 } /* extern "C" */
